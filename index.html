@@ -1,36 +1,479 @@
 <!doctype html>
-<html>
+<html lang="my">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tap Game</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<style>
-body{font-family:sans-serif;background:#111;color:#fff;text-align:center;padding-top:50px}
-button{padding:15px 25px;font-size:18px;border:none;border-radius:10px;margin:10px}
-.tap{background:#2d6cdf;color:white}
-.send{background:#22c55e;color:black}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Idle Farm</title>
+  <style>
+    :root { --bg:#0b0c10; --card:#141621; --muted:#98a2b3; --txt:#eef2ff; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#07070a, #0b0c10); color:var(--txt);}
+    header{position:sticky;top:0;z-index:5;background:rgba(10,11,16,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06)}
+    .top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:12px}
+    .brand{display:flex;flex-direction:column;gap:2px}
+    .brand b{font-size:16px}
+    .brand small{color:var(--muted);font-size:12px}
+    .pill{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:8px 10px;border-radius:999px;font-size:13px;white-space:nowrap}
+    .pill span{color:var(--muted)}
+    .nav{display:flex;gap:8px;padding:0 16px 12px}
+    .tab{flex:1;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--txt);padding:10px;border-radius:12px;font-size:13px}
+    .tab.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35)}
+    main{padding:16px;max-width:860px;margin:0 auto}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (min-width:720px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr));} }
+    .plot{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;min-height:130px;display:flex;flex-direction:column;gap:10px}
+    .plot h3{margin:0;font-size:14px}
+    .meta{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px}
+    .state{font-size:12px;color:var(--muted)}
+    .btnrow{display:flex;gap:8px;margin-top:auto}
+    button{border:0;border-radius:12px;padding:10px 10px;font-weight:600;font-size:13px}
+    .primary{background:rgba(34,197,94,.95);color:#07110a}
+    .ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid rgba(255,255,255,.08)}
+    .danger{background:rgba(239,68,68,.92);color:#130709}
+    .shop{display:grid;grid-template-columns:1fr;gap:12px}
+    @media (min-width:720px){ .shop{grid-template-columns:repeat(2,minmax(0,1fr));} }
+    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+    .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .name{font-weight:800}
+    .desc{color:var(--muted);font-size:12px;line-height:1.45}
+    .price{font-weight:800}
+    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
+    .toast.show{opacity:1}
+    .hint{color:var(--muted);font-size:12px;margin-top:10px}
+    .small{font-size:12px;color:var(--muted)}
+    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas; font-size:11px; padding:2px 6px; border:1px solid rgba(255,255,255,.12); border-radius:8px; background:rgba(255,255,255,.04)}
+  </style>
 </head>
 <body>
+<header>
+  <div class="top">
+    <div class="brand">
+      <b>🌾 Idle Farm</b>
+      <small>Plant → Wait → Harvest → Upgrade</small>
+    </div>
+    <div class="pill">
+      <div>💰 <b id="coins">0</b> <span>coins</span></div>
+      <div>⭐ <b id="level">1</b> <span>lvl</span></div>
+    </div>
+  </div>
+  <div class="nav">
+    <button class="tab active" id="tabFarm">Farm</button>
+    <button class="tab" id="tabShop">Shop</button>
+    <button class="tab" id="tabProfile">Profile</button>
+  </div>
+</header>
 
-<h2>⚡ Tap Game</h2>
-<p>Score: <span id="score">0</span></p>
+<main>
+  <section id="viewFarm">
+    <div class="grid" id="plots"></div>
+    <div class="hint">Tip: အချိန်ပြည့်ပြီး “✅ Ready” ဖြစ်ရင် Harvest လုပ်ပြီး coins ရယူပါ။</div>
+  </section>
 
-<button class="tap" onclick="tap()">👆 TAP</button>
-<br>
-<button class="send" onclick="sendScore()">Send Score</button>
+  <section id="viewShop" style="display:none;">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="name">🧱 Plot Upgrade</div>
+          <div class="desc">မြေကွက်အသစ် 1 ကွက် ထပ်ဖွင့်မယ် (max 8 plots)</div>
+        </div>
+        <div style="text-align:right">
+          <div class="price"><span id="plotCost">200</span> coins</div>
+          <button class="primary" id="buyPlotBtn">Buy Plot</button>
+        </div>
+      </div>
+      <div class="small">Plot တိုးရင် Farm မှာ grid ထဲကွက်အသစ်ပေါ်လာမယ်။</div>
+    </div>
+
+    <div class="shop" id="shopList"></div>
+    <div class="hint">Seed ဝယ်ပြီး Plant လုပ်ရင် အချိန်ပြည့်ပြီး Harvest လုပ်လို့ရမယ်။</div>
+  </section>
+
+  <section id="viewProfile" style="display:none;">
+    <div class="card">
+      <div class="row">
+        <div>
+          <div class="name">👤 Profile</div>
+          <div class="desc">Local save (browser) နဲ့သိမ်းထားတယ်။ ဖုန်းပြောင်း/clear data လုပ်ရင်ပျက်နိုင်တယ်။</div>
+        </div>
+      </div>
+      <div class="row">
+        <div>Total Harvests</div><b id="harvests">0</b>
+      </div>
+      <div class="row">
+        <div>Total Earned</div><b id="earned">0</b>
+      </div>
+      <div class="row">
+        <div>Plots</div><b id="plotCount">2</b>
+      </div>
+      <div class="btnrow">
+        <button class="ghost" id="exportBtn">Export Save</button>
+        <button class="ghost" id="importBtn">Import Save</button>
+        <button class="danger" id="resetBtn">Reset</button>
+      </div>
+      <div class="hint">Export/Import ကို <span class="kbd">copy/paste</span> နဲ့ save ပြောင်းလို့ရတယ်။</div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"></div>
 
 <script>
-let score = 0;
-function tap(){
-  score++;
-  document.getElementById("score").innerText = score;
-}
-function sendScore(){
-  alert("Score: " + score);
-}
-</script>
+/** ========== Simple Idle Farm (LocalStorage) ========== **/
 
+const STORAGE_KEY = "idle_farm_save_v1";
+const MAX_PLOTS = 8;
+
+const CROPS = [
+  { id:"lettuce", icon:"🥬", name:"Lettuce", game:"Fast crop", growSec: 60*2,  seedPrice: 5,   reward: 10,  xp: 3 },
+  { id:"corn",    icon:"🌽", name:"Corn",    game:"Mid crop",  growSec: 60*10, seedPrice: 25,  reward: 60,  xp: 10 },
+  { id:"tomato",  icon:"🍅", name:"Tomato",  game:"Long crop", growSec: 60*60, seedPrice: 150, reward: 400, xp: 40 }
+];
+
+const $ = (id)=>document.getElementById(id);
+const toastEl = $("toast");
+
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  setTimeout(()=>toastEl.classList.remove("show"), 1700);
+}
+
+function now(){ return Date.now(); }
+function fmtTime(sec){
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  const s = sec%60;
+  if(h>0) return `${h}h ${m}m`;
+  if(m>0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+function plotUpgradeCost(plotCount){
+  // simple curve: 200, 500, 900, 1400, ...
+  const n = plotCount - 2; // 0-based upgrades
+  return Math.floor(200 + (n*n)*120 + n*180);
+}
+
+function defaultSave(){
+  return {
+    coins: 50,
+    level: 1,
+    xp: 0,
+    totalHarvests: 0,
+    totalEarned: 0,
+    plotCount: 2,
+    plots: Array.from({length:2}, (_,i)=>({
+      slot:i,
+      status:"empty", // empty | growing
+      cropId:null,
+      plantedAt:null,
+      growSec:null,
+      reward:null,
+      xp:null
+    }))
+  };
+}
+
+let state = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultSave();
+    const s = JSON.parse(raw);
+
+    // basic repair for missing fields
+    if(!s.plots || !Array.isArray(s.plots)) return defaultSave();
+    if(!s.plotCount) s.plotCount = s.plots.length;
+
+    // ensure plots array matches plotCount
+    if(s.plots.length < s.plotCount){
+      for(let i=s.plots.length; i<s.plotCount; i++){
+        s.plots.push({slot:i,status:"empty",cropId:null,plantedAt:null,growSec:null,reward:null,xp:null});
+      }
+    } else if(s.plots.length > s.plotCount){
+      s.plots = s.plots.slice(0, s.plotCount);
+    }
+    return s;
+  }catch(e){
+    return defaultSave();
+  }
+}
+
+function save(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  renderHeader();
+}
+
+function addCoins(n){
+  state.coins += n;
+  state.totalEarned += Math.max(0, n);
+  // XP: 1 per 20 coins earned (tiny)
+  state.xp += Math.floor(Math.max(0, n) / 20);
+  levelUpIfNeeded();
+  save();
+}
+
+function spendCoins(n){
+  if(state.coins < n) return false;
+  state.coins -= n;
+  save();
+  return true;
+}
+
+function levelUpIfNeeded(){
+  // simple: level requires 20 * level xp
+  while(state.xp >= 20 * state.level){
+    state.xp -= 20 * state.level;
+    state.level += 1;
+    toast(`Level Up! ⭐ ${state.level}`);
+  }
+}
+
+function cropById(id){ return CROPS.find(c=>c.id===id); }
+
+function plotStatus(p){
+  if(p.status==="empty") return { label:"Empty", ready:false, remainSec:0 };
+  const end = p.plantedAt + p.growSec*1000;
+  const remain = (end - now())/1000;
+  if(remain <= 0) return { label:"✅ Ready", ready:true, remainSec:0 };
+  return { label:`⏳ Growing (${fmtTime(remain)})`, ready:false, remainSec:remain };
+}
+
+function renderHeader(){
+  $("coins").textContent = state.coins;
+  $("level").textContent = state.level;
+}
+
+function renderFarm(){
+  const root = $("plots");
+  root.innerHTML = "";
+  state.plots.forEach(p=>{
+    const st = plotStatus(p);
+    const crop = p.cropId ? cropById(p.cropId) : null;
+
+    const div = document.createElement("div");
+    div.className = "plot";
+    div.innerHTML = `
+      <div class="row" style="align-items:center">
+        <h3>Plot #${p.slot+1}</h3>
+        <div class="state">${st.label}</div>
+      </div>
+      <div class="meta">
+        <div>${crop ? `${crop.icon} ${crop.name}` : "—"}</div>
+        <div>${crop ? `+${p.reward}💰` : ""}</div>
+      </div>
+      <div class="btnrow" id="btnrow-${p.slot}"></div>
+    `;
+    root.appendChild(div);
+
+    const btnrow = div.querySelector(`#btnrow-${p.slot}`);
+
+    if(p.status === "empty"){
+      const plantBtn = document.createElement("button");
+      plantBtn.className = "primary";
+      plantBtn.textContent = "🌱 Plant";
+      plantBtn.onclick = ()=>openPlantMenu(p.slot);
+      btnrow.appendChild(plantBtn);
+    } else {
+      if(st.ready){
+        const harvestBtn = document.createElement("button");
+        harvestBtn.className = "primary";
+        harvestBtn.textContent = "🧺 Harvest";
+        harvestBtn.onclick = ()=>harvest(p.slot);
+        btnrow.appendChild(harvestBtn);
+      } else {
+        const waitBtn = document.createElement("button");
+        waitBtn.className = "ghost";
+        waitBtn.textContent = "⏳ Waiting";
+        waitBtn.disabled = true;
+        btnrow.appendChild(waitBtn);
+      }
+
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "ghost";
+      cancelBtn.textContent = "✖ Clear";
+      cancelBtn.onclick = ()=>clearPlot(p.slot);
+      btnrow.appendChild(cancelBtn);
+    }
+  });
+
+  // profile counters
+  $("harvests").textContent = state.totalHarvests;
+  $("earned").textContent = state.totalEarned;
+  $("plotCount").textContent = state.plotCount;
+
+  // shop plot cost
+  $("plotCost").textContent = plotUpgradeCost(state.plotCount);
+  $("buyPlotBtn").disabled = state.plotCount >= MAX_PLOTS;
+  $("buyPlotBtn").textContent = state.plotCount >= MAX_PLOTS ? "Max plots" : "Buy Plot";
+}
+
+function renderShop(){
+  const list = $("shopList");
+  list.innerHTML = "";
+  CROPS.forEach(c=>{
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <div class="row">
+        <div>
+          <div class="name">${c.icon} ${c.name}</div>
+          <div class="desc">Grow: ${fmtTime(c.growSec)} • Reward: <b>+${c.reward}</b> coins</div>
+        </div>
+        <div style="text-align:right">
+          <div class="price">${c.seedPrice} coins</div>
+          <button class="primary">Buy Seed</button>
+        </div>
+      </div>
+      <div class="small">${c.game}</div>
+    `;
+    card.querySelector("button").onclick = ()=>{
+      if(spendCoins(c.seedPrice)){
+        toast(`Bought ${c.name} seed ✅ (Plant from Farm)`);
+      } else {
+        toast("Coins မလုံလောက်ပါ ❌");
+      }
+    };
+    list.appendChild(card);
+  });
+}
+
+function openPlantMenu(slot){
+  // simple prompt menu (MVP)
+  const options = CROPS.map((c,i)=>`${i+1}) ${c.icon} ${c.name} — cost ${c.seedPrice}c — ${fmtTime(c.growSec)} → +${c.reward}c`).join("\n");
+  const pick = prompt(`Choose crop for Plot #${slot+1}:\n\n${options}\n\nEnter 1-${CROPS.length}:`);
+  if(!pick) return;
+  const idx = Number(pick) - 1;
+  if(!(idx>=0 && idx<CROPS.length)) { toast("Invalid choice"); return; }
+
+  const c = CROPS[idx];
+  if(!spendCoins(c.seedPrice)){
+    toast("Coins မလုံလောက်ပါ ❌");
+    return;
+  }
+  plant(slot, c.id);
+}
+
+function plant(slot, cropId){
+  const p = state.plots[slot];
+  if(!p) return;
+  if(p.status !== "empty"){ toast("Plot busy"); return; }
+  const c = cropById(cropId);
+  p.status = "growing";
+  p.cropId = c.id;
+  p.plantedAt = now();
+  p.growSec = c.growSec;
+  p.reward = c.reward;
+  p.xp = c.xp;
+  save();
+  renderFarm();
+  toast(`Planted ${c.name} 🌱`);
+}
+
+function harvest(slot){
+  const p = state.plots[slot];
+  if(!p || p.status==="empty") return;
+  const st = plotStatus(p);
+  if(!st.ready){ toast("Not ready yet"); return; }
+
+  state.totalHarvests += 1;
+  // add coins + xp
+  state.xp += (p.xp || 0);
+  addCoins(p.reward || 0);
+
+  // clear plot
+  state.plots[slot] = {slot, status:"empty", cropId:null, plantedAt:null, growSec:null, reward:null, xp:null};
+  save();
+  renderFarm();
+  toast("Harvested ✅");
+}
+
+function clearPlot(slot){
+  const p = state.plots[slot];
+  if(!p) return;
+  state.plots[slot] = {slot, status:"empty", cropId:null, plantedAt:null, growSec:null, reward:null, xp:null};
+  save();
+  renderFarm();
+  toast("Cleared");
+}
+
+function buyPlot(){
+  if(state.plotCount >= MAX_PLOTS){ toast("Max plots"); return; }
+  const cost = plotUpgradeCost(state.plotCount);
+  if(!spendCoins(cost)){ toast("Coins မလုံလောက်ပါ ❌"); return; }
+  state.plotCount += 1;
+  state.plots.push({slot:state.plotCount-1,status:"empty",cropId:null,plantedAt:null,growSec:null,reward:null,xp:null});
+  save();
+  renderFarm();
+  toast("New plot unlocked ✅");
+}
+
+function resetAll(){
+  if(!confirm("Reset game? All progress will be lost.")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = defaultSave();
+  save();
+  renderAll();
+  toast("Reset done");
+}
+
+function exportSave(){
+  const txt = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+  prompt("Copy this save string:", txt);
+}
+
+function importSave(){
+  const txt = prompt("Paste save string:");
+  if(!txt) return;
+  try{
+    const json = decodeURIComponent(escape(atob(txt)));
+    const s = JSON.parse(json);
+    state = s;
+    save();
+    renderAll();
+    toast("Imported ✅");
+  }catch(e){
+    toast("Import failed ❌");
+  }
+}
+
+function showView(which){
+  const views = { farm:$("viewFarm"), shop:$("viewShop"), profile:$("viewProfile") };
+  Object.values(views).forEach(v=>v.style.display="none");
+  views[which].style.display="block";
+
+  // tabs
+  $("tabFarm").classList.toggle("active", which==="farm");
+  $("tabShop").classList.toggle("active", which==="shop");
+  $("tabProfile").classList.toggle("active", which==="profile");
+}
+
+function wire(){
+  $("tabFarm").onclick = ()=>{ showView("farm"); renderFarm(); };
+  $("tabShop").onclick = ()=>{ showView("shop"); renderShop(); };
+  $("tabProfile").onclick = ()=>{ showView("profile"); renderFarm(); };
+
+  $("buyPlotBtn").onclick = buyPlot;
+  $("resetBtn").onclick = resetAll;
+  $("exportBtn").onclick = exportSave;
+  $("importBtn").onclick = importSave;
+}
+
+function renderAll(){
+  renderHeader();
+  renderFarm();
+  renderShop();
+}
+
+wire();
+renderAll();
+
+// update timers
+setInterval(()=>{ 
+  if($("viewFarm").style.display !== "none") renderFarm();
+}, 1000);
+</script>
 </body>
 </html>
