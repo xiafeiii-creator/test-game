@@ -4,6 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>Idle Farm</title>
+
+  <!-- ✅ Telegram WebApp SDK (needed for user.id binding) -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
   <style>
     :root { --bg:#0b0c10; --card:#141621; --muted:#98a2b3; --txt:#eef2ff; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
     *{box-sizing:border-box}
@@ -118,7 +122,8 @@
       <div class="row">
         <div>
           <div class="name">👤 Profile</div>
-          <div class="desc">Local save (browser) နဲ့သိမ်းထားတယ်။ clear data လုပ်ရင်ပျက်နိုင်တယ်။</div>
+          <div class="desc">Telegram account တစ်ခုချင်း Save သီးသန့်ဖြစ်အောင် binding လုပ်ထားတယ်။</div>
+          <div class="small" id="tgInfo" style="margin-top:6px;"></div>
         </div>
       </div>
       <div class="row">
@@ -165,7 +170,20 @@
 <script>
 /** ========== Idle Farm (Shop Seeds -> Inventory -> Plant) ========== **/
 
-const STORAGE_KEY = "idle_farm_save_v2";
+/* ===== ✅ Telegram Binding ===== */
+const tg = window.Telegram?.WebApp;
+try { tg?.ready(); } catch(e) {}
+
+const tgUser = tg?.initDataUnsafe?.user || null;
+const TG_USER_ID = tgUser?.id || null;
+
+// ✅ per-account storage key
+const STORAGE_KEY = TG_USER_ID ? `idle_farm_save_v2_${TG_USER_ID}` : `idle_farm_save_v2_guest`;
+
+// old keys (for migrate)
+const OLD_V2_KEY = "idle_farm_save_v2"; // previous non-telegram binding
+const OLD_V1_KEY = "idle_farm_save_v1";
+
 const MAX_PLOTS = 8;
 
 const CROPS = [
@@ -211,7 +229,6 @@ function defaultSave(){
     totalHarvests: 0,
     totalEarned: 0,
     plotCount: 2,
-    // NEW: inventory of seeds
     inv: { lettuce: 0, corn: 0, tomato: 0 },
     plots: Array.from({length:2}, (_,i)=>({
       slot:i,
@@ -228,28 +245,47 @@ function defaultSave(){
 let state = load();
 let plantSlotPending = null;
 
+function migrateIfNeeded(){
+  // If already has per-user save, nothing to do
+  if(localStorage.getItem(STORAGE_KEY)) return;
+
+  // Prefer OLD_V2_KEY (newer) then OLD_V1_KEY
+  const oldV2 = localStorage.getItem(OLD_V2_KEY);
+  if(oldV2){
+    localStorage.setItem(STORAGE_KEY, oldV2);
+    // optional: keep old key (so other users won't lose it)
+    return;
+  }
+
+  const oldV1 = localStorage.getItem(OLD_V1_KEY);
+  if(oldV1){
+    // convert v1 -> v2 format
+    try{
+      const s1 = JSON.parse(oldV1);
+      const s = defaultSave();
+      s.coins = s1.coins ?? s.coins;
+      s.level = s1.level ?? s.level;
+      s.xp = s1.xp ?? s.xp;
+      s.totalHarvests = s1.totalHarvests ?? 0;
+      s.totalEarned = s1.totalEarned ?? 0;
+      s.plotCount = s1.plotCount ?? s.plotCount;
+      s.plots = s1.plots ?? s.plots;
+      // inv stays 0
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+      return;
+    }catch(e){}
+  }
+}
+
 function load(){
   try{
+    migrateIfNeeded();
+
     const raw = localStorage.getItem(STORAGE_KEY);
     if(!raw){
-      // migrate from old version if exists
-      const old = localStorage.getItem("idle_farm_save_v1");
-      if(old){
-        const s1 = JSON.parse(old);
-        const s = defaultSave();
-        s.coins = s1.coins ?? s.coins;
-        s.level = s1.level ?? s.level;
-        s.xp = s1.xp ?? s.xp;
-        s.totalHarvests = s1.totalHarvests ?? 0;
-        s.totalEarned = s1.totalEarned ?? 0;
-        s.plotCount = s1.plotCount ?? s.plotCount;
-        s.plots = s1.plots ?? s.plots;
-        // inv stays 0
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-        return s;
-      }
       return defaultSave();
     }
+
     const s = JSON.parse(raw);
 
     // repair + ensure inv
@@ -280,7 +316,6 @@ function save(){
 function addCoins(n){
   state.coins += n;
   state.totalEarned += Math.max(0, n);
-  // small passive xp
   state.xp += Math.floor(Math.max(0, n) / 20);
   levelUpIfNeeded();
   save();
@@ -327,6 +362,17 @@ function useSeed(cropId){
 function renderHeader(){
   $("coins").textContent = state.coins;
   $("level").textContent = state.level;
+
+  const info = $("tgInfo");
+  if(info){
+    if(TG_USER_ID){
+      const name = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(" ");
+      const uname = tgUser?.username ? `@${tgUser.username}` : "";
+      info.textContent = `✅ Telegram: ${name} ${uname} (id: ${TG_USER_ID})`;
+    }else{
+      info.textContent = "⚠️ Telegram ထဲကနေ မဖွင့်ရသေးပါ (guest mode)";
+    }
+  }
 }
 
 function renderFarm(){
@@ -392,13 +438,11 @@ function renderFarm(){
     }
   });
 
-  // profile
   $("harvests").textContent = state.totalHarvests;
   $("earned").textContent = state.totalEarned;
   $("plotCount").textContent = state.plotCount;
   $("seedTotal").textContent = seedTotal(state.inv);
 
-  // shop plot cost
   $("plotCost").textContent = plotUpgradeCost(state.plotCount);
   $("buyPlotBtn").disabled = state.plotCount >= MAX_PLOTS;
   $("buyPlotBtn").textContent = state.plotCount >= MAX_PLOTS ? "Max plots" : "Buy Plot";
@@ -568,8 +612,14 @@ function buyPlot(){
 
 function resetAll(){
   if(!confirm("Reset game? All progress will be lost.")) return;
+
+  // ✅ remove per-user key only
   localStorage.removeItem(STORAGE_KEY);
-  localStorage.removeItem("idle_farm_save_v1");
+
+  // optional: keep old keys, or delete them too
+  // localStorage.removeItem(OLD_V2_KEY);
+  // localStorage.removeItem(OLD_V1_KEY);
+
   state = defaultSave();
   save();
   renderAll();
