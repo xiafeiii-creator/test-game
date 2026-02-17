@@ -19,29 +19,54 @@
     .tab{flex:1;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--txt);padding:10px;border-radius:12px;font-size:13px}
     .tab.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35)}
     main{padding:16px;max-width:860px;margin:0 auto}
+
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
     @media (min-width:720px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr));} }
+
     .plot{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;min-height:130px;display:flex;flex-direction:column;gap:10px}
     .plot h3{margin:0;font-size:14px}
     .meta{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px}
     .state{font-size:12px;color:var(--muted)}
     .btnrow{display:flex;gap:8px;margin-top:auto}
-    button{border:0;border-radius:12px;padding:10px 10px;font-weight:600;font-size:13px}
+    button{border:0;border-radius:12px;padding:10px 10px;font-weight:700;font-size:13px}
     .primary{background:rgba(34,197,94,.95);color:#07110a}
     .ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid rgba(255,255,255,.08)}
     .danger{background:rgba(239,68,68,.92);color:#130709}
+    .mutedBtn{background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.08)}
     .shop{display:grid;grid-template-columns:1fr;gap:12px}
     @media (min-width:720px){ .shop{grid-template-columns:repeat(2,minmax(0,1fr));} }
     .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
     .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .name{font-weight:800}
+    .name{font-weight:900}
     .desc{color:var(--muted);font-size:12px;line-height:1.45}
-    .price{font-weight:800}
+    .price{font-weight:900}
     .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
     .toast.show{opacity:1}
     .hint{color:var(--muted);font-size:12px;margin-top:10px}
     .small{font-size:12px;color:var(--muted)}
     .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas; font-size:11px; padding:2px 6px; border:1px solid rgba(255,255,255,.12); border-radius:8px; background:rgba(255,255,255,.04)}
+
+    /* ===== Modal Crop Picker ===== */
+    .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:50}
+    .modal{width:min(900px,100%);background:rgba(20,22,33,.98);border-top:1px solid rgba(255,255,255,.10);
+      border-left:1px solid rgba(255,255,255,.06);border-right:1px solid rgba(255,255,255,.06);
+      border-radius:18px 18px 0 0;padding:14px 14px 18px;max-height:80vh;overflow:auto}
+    .modalHeader{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+    .modalHeader b{font-size:14px}
+    .modalHeader small{color:var(--muted)}
+    .closeX{width:40px;height:40px;border-radius:12px}
+    .cropGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+    @media (min-width:720px){ .cropGrid{grid-template-columns:repeat(3,minmax(0,1fr));} }
+    .cropCard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px}
+    .cropTop{display:flex;justify-content:space-between;align-items:center}
+    .cropIcon{font-size:22px}
+    .badge{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted)}
+    .badge.ok{color:rgba(34,197,94,.95);border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08)}
+    .badge.bad{color:rgba(239,68,68,.95);border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08)}
+    .cropCard .name{font-size:14px}
+    .cropMeta{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px}
+    .cropActions{display:flex;gap:8px;margin-top:6px}
+    .fullBtn{flex:1}
   </style>
 </head>
 <body>
@@ -49,7 +74,7 @@
   <div class="top">
     <div class="brand">
       <b>🌾 Idle Farm</b>
-      <small>Plant → Wait → Harvest → Upgrade</small>
+      <small>Buy Seeds → Plant → Wait → Harvest</small>
     </div>
     <div class="pill">
       <div>💰 <b id="coins">0</b> <span>coins</span></div>
@@ -66,7 +91,7 @@
 <main>
   <section id="viewFarm">
     <div class="grid" id="plots"></div>
-    <div class="hint">Tip: အချိန်ပြည့်ပြီး “✅ Ready” ဖြစ်ရင် Harvest လုပ်ပြီး coins ရယူပါ။</div>
+    <div class="hint">Tip: Seed မရှိရင် Plant မလုပ်နိုင်ပါ။ Shop မှာ ဝယ်ပြီးမှ Plant လုပ်ပါ။</div>
   </section>
 
   <section id="viewShop" style="display:none;">
@@ -85,7 +110,7 @@
     </div>
 
     <div class="shop" id="shopList"></div>
-    <div class="hint">Seed ဝယ်ပြီး Plant လုပ်ရင် အချိန်ပြည့်ပြီး Harvest လုပ်လို့ရမယ်။</div>
+    <div class="hint">Seed ဝယ်ပြီး Inventory ထဲရှိတဲ့အရေအတွက်နဲ့ Plant လုပ်နိုင်ပါတယ်။</div>
   </section>
 
   <section id="viewProfile" style="display:none;">
@@ -93,7 +118,7 @@
       <div class="row">
         <div>
           <div class="name">👤 Profile</div>
-          <div class="desc">Local save (browser) နဲ့သိမ်းထားတယ်။ ဖုန်းပြောင်း/clear data လုပ်ရင်ပျက်နိုင်တယ်။</div>
+          <div class="desc">Local save (browser) နဲ့သိမ်းထားတယ်။ clear data လုပ်ရင်ပျက်နိုင်တယ်။</div>
         </div>
       </div>
       <div class="row">
@@ -105,6 +130,9 @@
       <div class="row">
         <div>Plots</div><b id="plotCount">2</b>
       </div>
+      <div class="row">
+        <div>Seeds (Total)</div><b id="seedTotal">0</b>
+      </div>
       <div class="btnrow">
         <button class="ghost" id="exportBtn">Export Save</button>
         <button class="ghost" id="importBtn">Import Save</button>
@@ -115,18 +143,35 @@
   </section>
 </main>
 
+<!-- Modal: Crop picker -->
+<div class="modalBack" id="modalBack">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modalHeader">
+      <div>
+        <b id="modalTitle">Choose a crop</b><br>
+        <small id="modalSub">Pick crop to plant</small>
+      </div>
+      <button class="ghost closeX" id="modalClose">✕</button>
+    </div>
+    <div class="cropGrid" id="cropGrid"></div>
+    <div class="hint" style="margin-top:12px">
+      ✅ Seed ရှိရင် Plant လုပ်လို့ရမယ်။ ❌ Seed မရှိရင် Shop မှာ ဝယ်ပါ။
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
-/** ========== Simple Idle Farm (LocalStorage) ========== **/
+/** ========== Idle Farm (Shop Seeds -> Inventory -> Plant) ========== **/
 
-const STORAGE_KEY = "idle_farm_save_v1";
+const STORAGE_KEY = "idle_farm_save_v2";
 const MAX_PLOTS = 8;
 
 const CROPS = [
-  { id:"lettuce", icon:"🥬", name:"Lettuce", game:"Fast crop", growSec: 60*2,  seedPrice: 5,   reward: 10,  xp: 3 },
-  { id:"corn",    icon:"🌽", name:"Corn",    game:"Mid crop",  growSec: 60*10, seedPrice: 25,  reward: 60,  xp: 10 },
-  { id:"tomato",  icon:"🍅", name:"Tomato",  game:"Long crop", growSec: 60*60, seedPrice: 150, reward: 400, xp: 40 }
+  { id:"lettuce", icon:"🥬", name:"Lettuce",  growSec: 60*2,  seedPrice: 5,   reward: 10,  xp: 3  },
+  { id:"corn",    icon:"🌽", name:"Corn",     growSec: 60*10, seedPrice: 25,  reward: 60,  xp: 10 },
+  { id:"tomato",  icon:"🍅", name:"Tomato",   growSec: 60*60, seedPrice: 150, reward: 400, xp: 40 }
 ];
 
 const $ = (id)=>document.getElementById(id);
@@ -150,9 +195,12 @@ function fmtTime(sec){
 }
 
 function plotUpgradeCost(plotCount){
-  // simple curve: 200, 500, 900, 1400, ...
-  const n = plotCount - 2; // 0-based upgrades
+  const n = plotCount - 2;
   return Math.floor(200 + (n*n)*120 + n*180);
+}
+
+function seedTotal(inv){
+  return Object.values(inv||{}).reduce((a,b)=>a+(b||0),0);
 }
 
 function defaultSave(){
@@ -163,6 +211,8 @@ function defaultSave(){
     totalHarvests: 0,
     totalEarned: 0,
     plotCount: 2,
+    // NEW: inventory of seeds
+    inv: { lettuce: 0, corn: 0, tomato: 0 },
     plots: Array.from({length:2}, (_,i)=>({
       slot:i,
       status:"empty", // empty | growing
@@ -176,18 +226,39 @@ function defaultSave(){
 }
 
 let state = load();
+let plantSlotPending = null;
 
 function load(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return defaultSave();
+    if(!raw){
+      // migrate from old version if exists
+      const old = localStorage.getItem("idle_farm_save_v1");
+      if(old){
+        const s1 = JSON.parse(old);
+        const s = defaultSave();
+        s.coins = s1.coins ?? s.coins;
+        s.level = s1.level ?? s.level;
+        s.xp = s1.xp ?? s.xp;
+        s.totalHarvests = s1.totalHarvests ?? 0;
+        s.totalEarned = s1.totalEarned ?? 0;
+        s.plotCount = s1.plotCount ?? s.plotCount;
+        s.plots = s1.plots ?? s.plots;
+        // inv stays 0
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+        return s;
+      }
+      return defaultSave();
+    }
     const s = JSON.parse(raw);
 
-    // basic repair for missing fields
+    // repair + ensure inv
+    if(!s.inv) s.inv = { lettuce:0, corn:0, tomato:0 };
+    CROPS.forEach(c=>{ if(typeof s.inv[c.id] !== "number") s.inv[c.id]=0; });
+
     if(!s.plots || !Array.isArray(s.plots)) return defaultSave();
     if(!s.plotCount) s.plotCount = s.plots.length;
 
-    // ensure plots array matches plotCount
     if(s.plots.length < s.plotCount){
       for(let i=s.plots.length; i<s.plotCount; i++){
         s.plots.push({slot:i,status:"empty",cropId:null,plantedAt:null,growSec:null,reward:null,xp:null});
@@ -209,7 +280,7 @@ function save(){
 function addCoins(n){
   state.coins += n;
   state.totalEarned += Math.max(0, n);
-  // XP: 1 per 20 coins earned (tiny)
+  // small passive xp
   state.xp += Math.floor(Math.max(0, n) / 20);
   levelUpIfNeeded();
   save();
@@ -223,7 +294,6 @@ function spendCoins(n){
 }
 
 function levelUpIfNeeded(){
-  // simple: level requires 20 * level xp
   while(state.xp >= 20 * state.level){
     state.xp -= 20 * state.level;
     state.level += 1;
@@ -239,6 +309,19 @@ function plotStatus(p){
   const remain = (end - now())/1000;
   if(remain <= 0) return { label:"✅ Ready", ready:true, remainSec:0 };
   return { label:`⏳ Growing (${fmtTime(remain)})`, ready:false, remainSec:remain };
+}
+
+/* ===== Inventory ops ===== */
+function hasSeed(cropId){ return (state.inv[cropId]||0) > 0; }
+function addSeed(cropId, qty){
+  state.inv[cropId] = (state.inv[cropId]||0) + qty;
+  save();
+}
+function useSeed(cropId){
+  if(!hasSeed(cropId)) return false;
+  state.inv[cropId] -= 1;
+  save();
+  return true;
 }
 
 function renderHeader(){
@@ -274,8 +357,18 @@ function renderFarm(){
       const plantBtn = document.createElement("button");
       plantBtn.className = "primary";
       plantBtn.textContent = "🌱 Plant";
-      plantBtn.onclick = ()=>openPlantMenu(p.slot);
+      plantBtn.onclick = ()=>openPlantModal(p.slot);
       btnrow.appendChild(plantBtn);
+
+      const invBtn = document.createElement("button");
+      invBtn.className = "ghost";
+      invBtn.textContent = "🎒 Seeds";
+      invBtn.onclick = ()=>{
+        const lines = CROPS.map(c=>`${c.icon} ${c.name}: ${state.inv[c.id]||0}`).join("\n");
+        alert("Seed Inventory:\n\n" + lines);
+      };
+      btnrow.appendChild(invBtn);
+
     } else {
       if(st.ready){
         const harvestBtn = document.createElement("button");
@@ -299,10 +392,11 @@ function renderFarm(){
     }
   });
 
-  // profile counters
+  // profile
   $("harvests").textContent = state.totalHarvests;
   $("earned").textContent = state.totalEarned;
   $("plotCount").textContent = state.plotCount;
+  $("seedTotal").textContent = seedTotal(state.inv);
 
   // shop plot cost
   $("plotCost").textContent = plotUpgradeCost(state.plotCount);
@@ -314,24 +408,30 @@ function renderShop(){
   const list = $("shopList");
   list.innerHTML = "";
   CROPS.forEach(c=>{
+    const owned = state.inv[c.id] || 0;
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
       <div class="row">
         <div>
           <div class="name">${c.icon} ${c.name}</div>
-          <div class="desc">Grow: ${fmtTime(c.growSec)} • Reward: <b>+${c.reward}</b> coins</div>
+          <div class="desc">Grow: ${fmtTime(c.growSec)} • Reward: <b>+${c.reward}</b> coins • XP: +${c.xp}</div>
         </div>
         <div style="text-align:right">
           <div class="price">${c.seedPrice} coins</div>
           <button class="primary">Buy Seed</button>
         </div>
       </div>
-      <div class="small">${c.game}</div>
+      <div class="row">
+        <div class="small">Owned: <b>${owned}</b></div>
+        <div class="small">Buy adds +1 seed</div>
+      </div>
     `;
     card.querySelector("button").onclick = ()=>{
       if(spendCoins(c.seedPrice)){
-        toast(`Bought ${c.name} seed ✅ (Plant from Farm)`);
+        addSeed(c.id, 1);
+        toast(`Bought ${c.name} seed ✅ (Owned: ${state.inv[c.id]})`);
+        renderShop();
       } else {
         toast("Coins မလုံလောက်ပါ ❌");
       }
@@ -340,26 +440,83 @@ function renderShop(){
   });
 }
 
-function openPlantMenu(slot){
-  // simple prompt menu (MVP)
-  const options = CROPS.map((c,i)=>`${i+1}) ${c.icon} ${c.name} — cost ${c.seedPrice}c — ${fmtTime(c.growSec)} → +${c.reward}c`).join("\n");
-  const pick = prompt(`Choose crop for Plot #${slot+1}:\n\n${options}\n\nEnter 1-${CROPS.length}:`);
-  if(!pick) return;
-  const idx = Number(pick) - 1;
-  if(!(idx>=0 && idx<CROPS.length)) { toast("Invalid choice"); return; }
-
-  const c = CROPS[idx];
-  if(!spendCoins(c.seedPrice)){
-    toast("Coins မလုံလောက်ပါ ❌");
-    return;
-  }
-  plant(slot, c.id);
+function openPlantModal(slot){
+  plantSlotPending = slot;
+  $("modalTitle").textContent = `Choose crop for Plot #${slot+1}`;
+  $("modalSub").textContent = `Seeds you own will be shown. Out-of-stock can't be planted.`;
+  renderCropPicker();
+  $("modalBack").style.display = "flex";
 }
 
-function plant(slot, cropId){
+function closePlantModal(){
+  $("modalBack").style.display = "none";
+  plantSlotPending = null;
+}
+
+function renderCropPicker(){
+  const grid = $("cropGrid");
+  grid.innerHTML = "";
+  CROPS.forEach(c=>{
+    const owned = state.inv[c.id] || 0;
+    const ok = owned > 0;
+
+    const card = document.createElement("div");
+    card.className = "cropCard";
+    card.innerHTML = `
+      <div class="cropTop">
+        <div class="cropIcon">${c.icon}</div>
+        <div class="badge ${ok ? "ok":"bad"}">${ok ? "In stock":"Out of stock"}</div>
+      </div>
+      <div class="name">${c.name}</div>
+      <div class="cropMeta">
+        <div>⏱ ${fmtTime(c.growSec)}</div>
+        <div>🧺 +${c.reward}</div>
+      </div>
+      <div class="cropMeta">
+        <div>🎒 Owned: <b>${owned}</b></div>
+        <div>⭐ +${c.xp}</div>
+      </div>
+      <div class="cropActions">
+        <button class="${ok ? "primary":"mutedBtn"} fullBtn" ${ok ? "" : "disabled"}>
+          🌱 Plant
+        </button>
+        <button class="ghost">🛒 Shop</button>
+      </div>
+    `;
+
+    const plantBtn = card.querySelectorAll("button")[0];
+    const shopBtn  = card.querySelectorAll("button")[1];
+
+    plantBtn.onclick = ()=>{
+      if(!ok){
+        toast("Seed မရှိပါ ❌ Shop မှာ ဝယ်ပါ");
+        return;
+      }
+      plantFromInventory(plantSlotPending, c.id);
+      closePlantModal();
+    };
+
+    shopBtn.onclick = ()=>{
+      closePlantModal();
+      showView("shop");
+      renderShop();
+      toast("Shop opened 🛒");
+    };
+
+    grid.appendChild(card);
+  });
+}
+
+function plantFromInventory(slot, cropId){
   const p = state.plots[slot];
   if(!p) return;
   if(p.status !== "empty"){ toast("Plot busy"); return; }
+
+  if(!useSeed(cropId)){
+    toast("Seed မရှိပါ ❌");
+    return;
+  }
+
   const c = cropById(cropId);
   p.status = "growing";
   p.cropId = c.id;
@@ -367,9 +524,10 @@ function plant(slot, cropId){
   p.growSec = c.growSec;
   p.reward = c.reward;
   p.xp = c.xp;
+
   save();
   renderFarm();
-  toast(`Planted ${c.name} 🌱`);
+  toast(`Planted ${c.name} 🌱 (Remaining: ${state.inv[c.id]})`);
 }
 
 function harvest(slot){
@@ -379,11 +537,9 @@ function harvest(slot){
   if(!st.ready){ toast("Not ready yet"); return; }
 
   state.totalHarvests += 1;
-  // add coins + xp
   state.xp += (p.xp || 0);
   addCoins(p.reward || 0);
 
-  // clear plot
   state.plots[slot] = {slot, status:"empty", cropId:null, plantedAt:null, growSec:null, reward:null, xp:null};
   save();
   renderFarm();
@@ -413,6 +569,7 @@ function buyPlot(){
 function resetAll(){
   if(!confirm("Reset game? All progress will be lost.")) return;
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem("idle_farm_save_v1");
   state = defaultSave();
   save();
   renderAll();
@@ -444,7 +601,6 @@ function showView(which){
   Object.values(views).forEach(v=>v.style.display="none");
   views[which].style.display="block";
 
-  // tabs
   $("tabFarm").classList.toggle("active", which==="farm");
   $("tabShop").classList.toggle("active", which==="shop");
   $("tabProfile").classList.toggle("active", which==="profile");
@@ -459,6 +615,11 @@ function wire(){
   $("resetBtn").onclick = resetAll;
   $("exportBtn").onclick = exportSave;
   $("importBtn").onclick = importSave;
+
+  $("modalClose").onclick = closePlantModal;
+  $("modalBack").addEventListener("click", (e)=>{
+    if(e.target === $("modalBack")) closePlantModal();
+  });
 }
 
 function renderAll(){
@@ -470,8 +631,8 @@ function renderAll(){
 wire();
 renderAll();
 
-// update timers
-setInterval(()=>{ 
+// update timers on farm
+setInterval(()=>{
   if($("viewFarm").style.display !== "none") renderFarm();
 }, 1000);
 </script>
