@@ -1,690 +1,1374 @@
-<!doctype html>
-<html lang="my">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Idle Farm</title>
-
-  <!-- ✅ Telegram WebApp SDK (needed for user.id binding) -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <style>
-    :root { --bg:#0b0c10; --card:#141621; --muted:#98a2b3; --txt:#eef2ff; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; }
+    :root{
+      --bg1:#0b1020; --bg2:#0a1a2e;
+      --card: rgba(255,255,255,.07);
+      --line: rgba(255,255,255,.10);
+      --text:#eaf0ff; --muted: rgba(234,240,255,.72);
+      --good:#27e1a1; --warn:#ffcc66; --bad:#ff5a7a;
+      --accent:#7c5cff; --accent2:#22d3ee;
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --r: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Helvetica Neue", "Apple Color Emoji","Segoe UI Emoji";
+    }
     *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#07070a, #0b0c10); color:var(--txt);}
-    header{position:sticky;top:0;z-index:5;background:rgba(10,11,16,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06)}
-    .top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;gap:12px}
-    .brand{display:flex;flex-direction:column;gap:2px}
-    .brand b{font-size:16px}
-    .brand small{color:var(--muted);font-size:12px}
-    .pill{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);padding:8px 10px;border-radius:999px;font-size:13px;white-space:nowrap}
-    .pill span{color:var(--muted)}
-    .nav{display:flex;gap:8px;padding:0 16px 12px}
-    .tab{flex:1;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--txt);padding:10px;border-radius:12px;font-size:13px}
-    .tab.active{background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.35)}
-    main{padding:16px;max-width:860px;margin:0 auto}
+    body{
+      margin:0; font-family: var(--sans); color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 20% 10%, rgba(124,92,255,.22), transparent 55%),
+        radial-gradient(900px 600px at 90% 25%, rgba(34,211,238,.18), transparent 55%),
+        radial-gradient(1000px 700px at 40% 95%, rgba(39,225,161,.12), transparent 55%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      min-height: 100vh;
+      padding: 16px; padding-bottom: 24px;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    .wrap{max-width: 980px; margin: 0 auto;}
+    .top{display:flex; gap:12px; align-items:stretch; flex-wrap:wrap;}
+    .brand{
+      flex: 1 1 320px;
+      background: linear-gradient(135deg, rgba(124,92,255,.22), rgba(34,211,238,.16));
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      padding: 14px 14px 12px 14px;
+      box-shadow: var(--shadow);
+      position:relative; overflow:hidden;
+    }
+    .brand:before{
+      content:""; position:absolute; inset:-120px -140px auto auto;
+      width: 280px; height: 280px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.22), transparent 60%);
+      transform: rotate(22deg);
+      pointer-events:none;
+    }
+    .title{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .title h1{margin:0; font-size: 18px; letter-spacing:.3px;}
+    .title .chip{
+      font-family: var(--mono); font-size: 12px;
+      padding: 6px 10px; border-radius: 999px;
+      background: rgba(0,0,0,.25);
+      border: 1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.85);
+      backdrop-filter: blur(6px);
+    }
+    .sub{margin-top: 8px; display:flex; flex-wrap:wrap; gap:10px; color: var(--muted); font-size: 13px; line-height:1.25;}
+    .sub .pill{
+      padding: 8px 10px; border-radius: 999px;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10);
+    }
 
-    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    @media (min-width:720px){ .grid{grid-template-columns:repeat(4,minmax(0,1fr));} }
+    .stats{
+      flex: 1 1 320px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .card{
+      background: var(--card);
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      padding: 12px 12px 10px 12px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(8px);
+    }
+    .k{font-size: 12px; color: rgba(234,240,255,.75);}
+    .v{margin-top: 6px; font-size: 18px; font-family: var(--mono); letter-spacing:.2px;}
+    .mini{margin-top: 6px; font-size: 12px; color: rgba(234,240,255,.62);}
 
-    .plot{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;min-height:130px;display:flex;flex-direction:column;gap:10px}
-    .plot h3{margin:0;font-size:14px}
-    .meta{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px}
-    .state{font-size:12px;color:var(--muted)}
-    .btnrow{display:flex;gap:8px;margin-top:auto}
-    button{border:0;border-radius:12px;padding:10px 10px;font-weight:700;font-size:13px}
-    .primary{background:rgba(34,197,94,.95);color:#07110a}
-    .ghost{background:rgba(255,255,255,.06);color:var(--txt);border:1px solid rgba(255,255,255,.08)}
-    .danger{background:rgba(239,68,68,.92);color:#130709}
-    .mutedBtn{background:rgba(255,255,255,.03);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.08)}
-    .shop{display:grid;grid-template-columns:1fr;gap:12px}
-    @media (min-width:720px){ .shop{grid-template-columns:repeat(2,minmax(0,1fr));} }
-    .card{background:var(--card);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
-    .row{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
-    .name{font-weight:900}
-    .desc{color:var(--muted);font-size:12px;line-height:1.45}
-    .price{font-weight:900}
-    .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(0,0,0,.85);border:1px solid rgba(255,255,255,.12);padding:10px 12px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .2s}
-    .toast.show{opacity:1}
-    .hint{color:var(--muted);font-size:12px;margin-top:10px}
-    .small{font-size:12px;color:var(--muted)}
-    .kbd{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas; font-size:11px; padding:2px 6px; border:1px solid rgba(255,255,255,.12); border-radius:8px; background:rgba(255,255,255,.04)}
+    .grid{margin-top: 14px; display:grid; grid-template-columns: 1.35fr .95fr; gap: 12px;}
+    @media (max-width: 920px){ .grid{grid-template-columns: 1fr;} }
 
-    /* ===== Modal Crop Picker ===== */
-    .modalBack{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;justify-content:center;z-index:50}
-    .modal{width:min(900px,100%);background:rgba(20,22,33,.98);border-top:1px solid rgba(255,255,255,.10);
-      border-left:1px solid rgba(255,255,255,.06);border-right:1px solid rgba(255,255,255,.06);
-      border-radius:18px 18px 0 0;padding:14px 14px 18px;max-height:80vh;overflow:auto}
-    .modalHeader{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
-    .modalHeader b{font-size:14px}
-    .modalHeader small{color:var(--muted)}
-    .closeX{width:40px;height:40px;border-radius:12px}
-    .cropGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-    @media (min-width:720px){ .cropGrid{grid-template-columns:repeat(3,minmax(0,1fr));} }
-    .cropCard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px}
-    .cropTop{display:flex;justify-content:space-between;align-items:center}
-    .cropIcon{font-size:22px}
-    .badge{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.12);color:var(--muted)}
-    .badge.ok{color:rgba(34,197,94,.95);border-color:rgba(34,197,94,.35);background:rgba(34,197,94,.08)}
-    .badge.bad{color:rgba(239,68,68,.95);border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.08)}
-    .cropCard .name{font-size:14px}
-    .cropMeta{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px}
-    .cropActions{display:flex;gap:8px;margin-top:6px}
-    .fullBtn{flex:1}
+    .panel{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.05));
+      border:1px solid var(--line);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panelHead{
+      padding: 12px 12px 10px 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(0,0,0,.12);
+    }
+    .panelHead h2{margin:0; font-size: 14px; letter-spacing:.25px; color: rgba(234,240,255,.9);}
+    .panelHead .hint{font-size: 12px; color: rgba(234,240,255,.65);}
+
+    .farm{padding: 12px;}
+    .field{display:grid; grid-template-columns: repeat(4, 1fr); gap:10px;}
+    @media (max-width: 520px){ .field{grid-template-columns: repeat(3, 1fr);} }
+
+    .plot{
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.10), transparent 55%),
+                  linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.28));
+      padding: 10px 10px 8px 10px;
+      min-height: 112px;
+      position: relative;
+      overflow:hidden;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      touch-action: manipulation;
+    }
+    .plot:hover{transform: translateY(-1px); border-color: rgba(255,255,255,.18);}
+    .plot:active{transform: translateY(0px) scale(.99);}
+    .plot .badge{
+      position:absolute; top:10px; right:10px;
+      font-family: var(--mono); font-size: 11px;
+      padding: 5px 8px; border-radius: 999px;
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.12);
+      color: rgba(255,255,255,.85);
+    }
+    .plot .emoji{font-size: 28px; margin-top: 16px;}
+    .plot .name{margin-top: 8px; font-size: 12px; color: rgba(234,240,255,.85);}
+    .plot .bar{
+      margin-top: 8px; height: 8px; border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .plot .bar > i{
+      display:block; height:100%; width:0%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 999px;
+      transition: width .15s linear;
+    }
+    .plot .foot{
+      margin-top: 7px; font-size: 11px; color: rgba(234,240,255,.62);
+      display:flex; justify-content:space-between; font-family: var(--mono);
+    }
+
+    .controls{padding: 12px; display:grid; gap: 10px;}
+    .row{display:flex; gap:10px; flex-wrap:wrap;}
+    .btn{
+      flex: 1 1 140px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.92);
+      padding: 12px 12px;
+      font-size: 13px;
+      cursor:pointer;
+      user-select:none;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      touch-action: manipulation;
+    }
+    .btn:hover{background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18);}
+    .btn:active{transform: scale(.99);}
+    .btn b{font-family: var(--mono); font-weight: 700;}
+    .btn .r{font-family: var(--mono); font-size: 12px; color: rgba(234,240,255,.65); white-space:nowrap;}
+    .btn.primary{background: linear-gradient(135deg, rgba(124,92,255,.32), rgba(34,211,238,.22));}
+    .btn.good{background: linear-gradient(135deg, rgba(39,225,161,.28), rgba(34,211,238,.15));}
+    .btn.warn{background: linear-gradient(135deg, rgba(255,204,102,.22), rgba(124,92,255,.12));}
+    .btn.bad{background: linear-gradient(135deg, rgba(255,90,122,.22), rgba(124,92,255,.12));}
+
+    .shop{padding: 12px; display:grid; gap: 10px;}
+    .item{
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      padding: 12px;
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .item .l{display:flex; align-items:center; gap:10px;}
+    .item .ico{font-size: 22px;}
+    .item .t{display:flex; flex-direction:column; gap:3px;}
+    .item .t .n{font-size: 13px;}
+    .item .t .d{font-size: 12px; color: rgba(234,240,255,.62);}
+    .item .buy{
+      border-radius: 12px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      padding: 10px 12px;
+      cursor:pointer;
+      user-select:none;
+      display:flex; align-items:center; gap:10px;
+      transition: transform .12s ease, border-color .12s ease, background .12s ease;
+      touch-action: manipulation;
+    }
+    .item .buy:hover{border-color: rgba(255,255,255,.22); background: rgba(0,0,0,.22);}
+    .item .buy:active{transform: scale(.99);}
+    .item .buy .p{font-family: var(--mono); font-size: 12px; color: rgba(234,240,255,.8);}
+    .item .buy .b{font-family: var(--mono); font-weight:700; font-size: 12px; color: var(--good);}
+
+    .split{
+      display:grid; gap:10px; padding:12px;
+      grid-template-columns: 1fr;
+    }
+    .line{height:1px; background: rgba(255,255,255,.10); margin: 6px 0;}
+    .miniRow{display:flex; justify-content:space-between; gap:12px; font-size:12px; color: rgba(234,240,255,.72); font-family: var(--mono);}
+    .tag{
+      font-size:11px; padding:3px 8px; border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      color: rgba(234,240,255,.72);
+      background: rgba(255,255,255,.04);
+      font-family: var(--mono);
+    }
+    .tag.good{border-color: rgba(39,225,161,.35); color: rgba(39,225,161,.95); background: rgba(39,225,161,.08);}
+    .tag.warn{border-color: rgba(255,204,102,.35); color: rgba(255,204,102,.95); background: rgba(255,204,102,.08);}
+    .tag.bad{border-color: rgba(255,90,122,.35); color: rgba(255,90,122,.95); background: rgba(255,90,122,.08);}
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 14px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.55);
+      border: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.9);
+      padding: 10px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 14px 40px rgba(0,0,0,.35);
+      max-width: min(520px, calc(100vw - 24px));
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow: ellipsis;
+      z-index: 999;
+    }
+    .toast.show{opacity: 1; transform: translateX(-50%) translateY(-4px);}
+
+    .footer{
+      margin-top: 12px;
+      text-align:center;
+      color: rgba(234,240,255,.52);
+      font-size: 12px;
+    }
+    .footer code{font-family: var(--mono); color: rgba(234,240,255,.75);}
+
+    /* Small modal */
+    .modalBack{
+      position:fixed; inset:0; background:rgba(0,0,0,.58);
+      display:none; align-items:flex-end; justify-content:center;
+      z-index: 1000;
+    }
+    .modal{
+      width:min(920px,100%);
+      max-height:82vh;
+      overflow:auto;
+      background: rgba(20,22,33,.98);
+      border-top: 1px solid rgba(255,255,255,.12);
+      border-left: 1px solid rgba(255,255,255,.06);
+      border-right: 1px solid rgba(255,255,255,.06);
+      border-radius: 18px 18px 0 0;
+      padding: 14px 14px 16px;
+    }
+    .modalHead{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px;}
+    .modalHead b{font-size:14px;}
+    .closeX{
+      width:40px; height:40px;
+      border-radius:12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      color: rgba(234,240,255,.92);
+      cursor:pointer;
+      touch-action: manipulation;
+    }
+    .cropGrid{display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px;}
+    @media (min-width:720px){ .cropGrid{grid-template-columns: repeat(3, minmax(0,1fr)); } }
+    .cropCard{
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:16px;
+      padding:12px;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .cropTop{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+    .cropIcon{font-size:22px;}
+    .cropName{font-weight:900; font-size:14px;}
+    .cropMeta{display:flex; justify-content:space-between; gap:10px; font-size:12px; color: rgba(234,240,255,.68); font-family: var(--mono);}
+    .cropBtns{display:flex; gap:8px; margin-top:6px;}
+    .fullBtn{
+      flex:1;
+      border-radius:12px;
+      padding:10px 10px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: rgba(234,240,255,.92);
+      cursor:pointer;
+      font-weight:900;
+      touch-action: manipulation;
+    }
+    .fullBtn.primary{
+      background: rgba(39,225,161,.90);
+      color:#07110a;
+      border-color: rgba(39,225,161,.35);
+    }
+    .fullBtn:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+    }
   </style>
 </head>
 <body>
-<header>
-  <div class="top">
-    <div class="brand">
-      <b>🌾 Idle Farm</b>
-      <small>Buy Seeds → Plant → Wait → Harvest</small>
+  <div class="wrap">
+    <div class="top">
+      <div class="brand">
+        <div class="title">
+          <h1>🌾 Idle Farm</h1>
+          <div class="chip" id="farmIdChip">farm#000000</div>
+        </div>
+        <div class="sub">
+          <div class="pill">Tap plot → Plant / Harvest</div>
+          <div class="pill">Offline idle + Save</div>
+          <div class="pill">Prestige at lvl 15</div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="card">
+          <div class="k">Coins</div>
+          <div class="v" id="coins">0</div>
+          <div class="mini">Earn by harvesting crops</div>
+        </div>
+        <div class="card">
+          <div class="k">Level</div>
+          <div class="v" id="level">1</div>
+          <div class="mini" id="xpLine">XP 0 / 100</div>
+        </div>
+        <div class="card">
+          <div class="k">Harvests</div>
+          <div class="v" id="harvests">0</div>
+          <div class="mini">Total harvest count</div>
+        </div>
+        <div class="card">
+          <div class="k">Prestige</div>
+          <div class="v"><span id="prestige">0</span> ✨</div>
+          <div class="mini"><span id="pp">0</span> PP • Auto: <span id="autoTag">OFF</span></div>
+        </div>
+      </div>
     </div>
-    <div class="pill">
-      <div>💰 <b id="coins">0</b> <span>coins</span></div>
-      <div>⭐ <b id="level">1</b> <span>lvl</span></div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="panelHead">
+          <h2>🧩 Field (<span id="plotLabel">12</span> plots)</h2>
+          <div class="hint">Hold growth offline (cap 12h)</div>
+        </div>
+        <div class="farm">
+          <div class="field" id="field"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelHead">
+          <h2>🛠️ Actions</h2>
+          <div class="hint">Tap buttons (touch ready)</div>
+        </div>
+
+        <div class="controls">
+          <div class="row">
+            <div class="btn primary" id="btnPlantAll">
+              <span>🌱 Plant All</span>
+              <span class="r">Choose crop</span>
+            </div>
+            <div class="btn good" id="btnHarvestAll">
+              <span>🧺 Harvest All</span>
+              <span class="r">Ready only</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="btn warn" id="btnBoost">
+              <span>⚡ Boost 30s</span>
+              <span class="r"><b id="boostPrice">150</b> coins</span>
+            </div>
+            <div class="btn bad" id="btnReset">
+              <span>♻️ Reset</span>
+              <span class="r">Clear save</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="btn good" id="btnDaily">
+              <span>🎁 Daily Reward</span>
+              <span class="r" id="dailyTag">Check</span>
+            </div>
+            <div class="btn primary" id="btnQuests">
+              <span>📜 Quests</span>
+              <span class="r" id="questTag">0/3</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="btn warn" id="btnPrestige">
+              <span>✨ Prestige</span>
+              <span class="r" id="prestigeTag">Locked</span>
+            </div>
+            <div class="btn primary" id="btnSaveTools">
+              <span>💾 Save Tools</span>
+              <span class="r">Export/Import</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panelHead" style="border-top:1px solid rgba(255,255,255,.08);">
+          <h2>🛒 Shop</h2>
+          <div class="hint">Upgrades + automation</div>
+        </div>
+
+        <div class="shop">
+          <div class="item">
+            <div class="l">
+              <div class="ico">🧑‍🌾</div>
+              <div class="t">
+                <div class="n">Farmer Speed</div>
+                <div class="d">Grow faster (+10%)</div>
+              </div>
+            </div>
+            <div class="buy" data-buy="speed">
+              <span class="p">Price</span>
+              <span class="b" id="priceSpeed">200</span>
+            </div>
+          </div>
+
+          <div class="item">
+            <div class="l">
+              <div class="ico">💰</div>
+              <div class="t">
+                <div class="n">Better Yield</div>
+                <div class="d">More coins (+15%)</div>
+              </div>
+            </div>
+            <div class="buy" data-buy="yield">
+              <span class="p">Price</span>
+              <span class="b" id="priceYield">260</span>
+            </div>
+          </div>
+
+          <div class="item">
+            <div class="l">
+              <div class="ico">🧺</div>
+              <div class="t">
+                <div class="n">Extra Plot</div>
+                <div class="d">Add 1 plot (max 16)</div>
+              </div>
+            </div>
+            <div class="buy" data-buy="plot">
+              <span class="p">Price</span>
+              <span class="b" id="pricePlot">320</span>
+            </div>
+          </div>
+
+          <div class="item">
+            <div class="l">
+              <div class="ico">🤖</div>
+              <div class="t">
+                <div class="n">Auto Farmer</div>
+                <div class="d">Auto harvest + auto plant</div>
+              </div>
+            </div>
+            <div class="buy" data-buy="auto">
+              <span class="p">Price</span>
+              <span class="b" id="priceAuto">1 PP</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="split">
+          <div class="miniRow"><span>Selected Crop</span><span id="selCrop">—</span></div>
+          <div class="miniRow"><span>Streak</span><span id="streak">0</span></div>
+          <div class="miniRow"><span>Achievements</span><span id="achCount">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      Saved in <code>localStorage</code> • Offline cap <code>12h</code> • Version <code>2.0</code>
     </div>
   </div>
-  <div class="nav">
-    <button class="tab active" id="tabFarm">Farm</button>
-    <button class="tab" id="tabShop">Shop</button>
-    <button class="tab" id="tabProfile">Profile</button>
-  </div>
-</header>
 
-<main>
-  <section id="viewFarm">
-    <div class="grid" id="plots"></div>
-    <div class="hint">Tip: Seed မရှိရင် Plant မလုပ်နိုင်ပါ။ Shop မှာ ဝယ်ပြီးမှ Plant လုပ်ပါ။</div>
-  </section>
+  <div class="toast" id="toast">Hello</div>
 
-  <section id="viewShop" style="display:none;">
-    <div class="card">
-      <div class="row">
+  <!-- Modal: Crop picker -->
+  <div class="modalBack" id="modalBack">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modalHead">
         <div>
-          <div class="name">🧱 Plot Upgrade</div>
-          <div class="desc">မြေကွက်အသစ် 1 ကွက် ထပ်ဖွင့်မယ် (max 8 plots)</div>
+          <b id="modalTitle">Choose a crop</b><br>
+          <small style="color:rgba(234,240,255,.65)" id="modalSub">Pick crop to plant</small>
         </div>
-        <div style="text-align:right">
-          <div class="price"><span id="plotCost">200</span> coins</div>
-          <button class="primary" id="buyPlotBtn">Buy Plot</button>
-        </div>
+        <button class="closeX" id="modalClose">✕</button>
       </div>
-      <div class="small">Plot တိုးရင် Farm မှာ grid ထဲကွက်အသစ်ပေါ်လာမယ်။</div>
-    </div>
-
-    <div class="shop" id="shopList"></div>
-    <div class="hint">Seed ဝယ်ပြီး Inventory ထဲရှိတဲ့အရေအတွက်နဲ့ Plant လုပ်နိုင်ပါတယ်။</div>
-  </section>
-
-  <section id="viewProfile" style="display:none;">
-    <div class="card">
-      <div class="row">
-        <div>
-          <div class="name">👤 Profile</div>
-          <div class="desc">Telegram account တစ်ခုချင်း Save သီးသန့်ဖြစ်အောင် binding လုပ်ထားတယ်။</div>
-          <div class="small" id="tgInfo" style="margin-top:6px;"></div>
-        </div>
+      <div class="cropGrid" id="cropGrid"></div>
+      <div style="margin-top:10px; color:rgba(234,240,255,.68); font-size:12px;">
+        Tip: Higher crops unlock as your level increases.
       </div>
-      <div class="row">
-        <div>Total Harvests</div><b id="harvests">0</b>
-      </div>
-      <div class="row">
-        <div>Total Earned</div><b id="earned">0</b>
-      </div>
-      <div class="row">
-        <div>Plots</div><b id="plotCount">2</b>
-      </div>
-      <div class="row">
-        <div>Seeds (Total)</div><b id="seedTotal">0</b>
-      </div>
-      <div class="btnrow">
-        <button class="ghost" id="exportBtn">Export Save</button>
-        <button class="ghost" id="importBtn">Import Save</button>
-        <button class="danger" id="resetBtn">Reset</button>
-      </div>
-      <div class="hint">Export/Import ကို <span class="kbd">copy/paste</span> နဲ့ save ပြောင်းလို့ရတယ်။</div>
-    </div>
-  </section>
-</main>
-
-<!-- Modal: Crop picker -->
-<div class="modalBack" id="modalBack">
-  <div class="modal" role="dialog" aria-modal="true">
-    <div class="modalHeader">
-      <div>
-        <b id="modalTitle">Choose a crop</b><br>
-        <small id="modalSub">Pick crop to plant</small>
-      </div>
-      <button class="ghost closeX" id="modalClose">✕</button>
-    </div>
-    <div class="cropGrid" id="cropGrid"></div>
-    <div class="hint" style="margin-top:12px">
-      ✅ Seed ရှိရင် Plant လုပ်လို့ရမယ်။ ❌ Seed မရှိရင် Shop မှာ ဝယ်ပါ။
     </div>
   </div>
-</div>
 
-<div class="toast" id="toast"></div>
+  <script>
+  /***************
+   * Idle Farm v2 (single-file)
+   * - Prestige at level 15 (default)
+   * - Offline cap 12h (default)
+   * - Daily + Quests + Achievements
+   * - Auto Farmer unlock (PP)
+   * - Export/Import save
+   ***************/
 
-<script>
-/** ========== Idle Farm (Shop Seeds -> Inventory -> Plant) ========== **/
+  // Safe storage (fallback if localStorage blocked)
+  const store = (() => {
+    try {
+      const t="__t__";
+      localStorage.setItem(t,"1");
+      localStorage.removeItem(t);
+      return localStorage;
+    } catch(e) {
+      let mem = {};
+      return {
+        getItem:k => (k in mem ? mem[k] : null),
+        setItem:(k,v)=>{ mem[k]=String(v); },
+        removeItem:k=>{ delete mem[k]; }
+      };
+    }
+  })();
 
-/* ===== ✅ Telegram Binding ===== */
-const tg = window.Telegram?.WebApp;
-try { tg?.ready(); } catch(e) {}
+  const STORAGE_KEY = "idleFarmSave_v2";
+  const now = () => Date.now();
+  const DAY_MS = 24*60*60*1000;
 
-const tgUser = tg?.initDataUnsafe?.user || null;
-const TG_USER_ID = tgUser?.id || null;
+  // Default tuning
+  const PRESTIGE_UNLOCK_LVL = 20;
+  const OFFLINE_CAP_MS = 12 * 60 * 60 * 1000; // 12h
+  const MAX_PLOTS = 20;
+  const BASE_PLOTS = 12;
 
-// ✅ per-account storage key
-const STORAGE_KEY = TG_USER_ID ? `idle_farm_save_v2_${TG_USER_ID}` : `idle_farm_save_v2_guest`;
+  const CROPS = [
+    { id:"wheat", name:"Wheat", emoji:"🌾", growMs: 12000, base: 18, unlockLvl: 1 },
+    { id:"corn",  name:"Corn",  emoji:"🌽", growMs: 22000, base: 34, unlockLvl: 6 },
+    { id:"rice",  name:"Rice",  emoji:"🍚", growMs: 32000, base: 56, unlockLvl: 12 },
+    { id:"carrot",name:"Carrot",emoji:"🥕", growMs: 52000, base: 92, unlockLvl: 16 },
+    { id:"tomato",name:"Tomato",emoji:"🍅", growMs: 85000, base: 150, unlockLvl: 20 },
+  ];
 
-// old keys (for migrate)
-const OLD_V2_KEY = "idle_farm_save_v2"; // previous non-telegram binding
-const OLD_V1_KEY = "idle_farm_save_v1";
+  const $ = (id)=>document.getElementById(id);
 
-const MAX_PLOTS = 8;
-
-const CROPS = [
-  { id:"lettuce", icon:"🥬", name:"Lettuce",  growSec: 60*2,  seedPrice: 5,   reward: 10,  xp: 3  },
-  { id:"corn",    icon:"🌽", name:"Corn",     growSec: 60*10, seedPrice: 25,  reward: 60,  xp: 10 },
-  { id:"tomato",  icon:"🍅", name:"Tomato",   growSec: 60*60, seedPrice: 150, reward: 400, xp: 40 }
-];
-
-const $ = (id)=>document.getElementById(id);
-const toastEl = $("toast");
-
-function toast(msg){
-  toastEl.textContent = msg;
-  toastEl.classList.add("show");
-  setTimeout(()=>toastEl.classList.remove("show"), 1700);
-}
-
-function now(){ return Date.now(); }
-function fmtTime(sec){
-  sec = Math.max(0, Math.floor(sec));
-  const h = Math.floor(sec/3600);
-  const m = Math.floor((sec%3600)/60);
-  const s = sec%60;
-  if(h>0) return `${h}h ${m}m`;
-  if(m>0) return `${m}m ${s}s`;
-  return `${s}s`;
-}
-
-function plotUpgradeCost(plotCount){
-  const n = plotCount - 2;
-  return Math.floor(200 + (n*n)*120 + n*180);
-}
-
-function seedTotal(inv){
-  return Object.values(inv||{}).reduce((a,b)=>a+(b||0),0);
-}
-
-function defaultSave(){
-  return {
-    coins: 50,
-    level: 1,
-    xp: 0,
-    totalHarvests: 0,
-    totalEarned: 0,
-    plotCount: 2,
-    inv: { lettuce: 0, corn: 0, tomato: 0 },
-    plots: Array.from({length:2}, (_,i)=>({
-      slot:i,
-      status:"empty", // empty | growing
-      cropId:null,
-      plantedAt:null,
-      growSec:null,
-      reward:null,
-      xp:null
-    }))
+  const ui = {
+    field: $("field"),
+    coins: $("coins"),
+    level: $("level"),
+    xpLine: $("xpLine"),
+    harvests: $("harvests"),
+    prestige: $("prestige"),
+    pp: $("pp"),
+    autoTag: $("autoTag"),
+    plotLabel: $("plotLabel"),
+    farmIdChip: $("farmIdChip"),
+    toast: $("toast"),
+    btnPlantAll: $("btnPlantAll"),
+    btnHarvestAll: $("btnHarvestAll"),
+    btnBoost: $("btnBoost"),
+    boostPrice: $("boostPrice"),
+    btnReset: $("btnReset"),
+    btnDaily: $("btnDaily"),
+    dailyTag: $("dailyTag"),
+    btnQuests: $("btnQuests"),
+    questTag: $("questTag"),
+    btnPrestige: $("btnPrestige"),
+    prestigeTag: $("prestigeTag"),
+    btnSaveTools: $("btnSaveTools"),
+    priceSpeed: $("priceSpeed"),
+    priceYield: $("priceYield"),
+    pricePlot: $("pricePlot"),
+    priceAuto: $("priceAuto"),
+    selCrop: $("selCrop"),
+    streak: $("streak"),
+    achCount: $("achCount"),
+    modalBack: $("modalBack"),
+    modalClose: $("modalClose"),
+    modalTitle: $("modalTitle"),
+    modalSub: $("modalSub"),
+    cropGrid: $("cropGrid"),
   };
-}
 
-let state = load();
-let plantSlotPending = null;
+  function format(n){ return Math.floor(n).toLocaleString("en-US"); }
 
-function migrateIfNeeded(){
-  // If already has per-user save, nothing to do
-  if(localStorage.getItem(STORAGE_KEY)) return;
-
-  // Prefer OLD_V2_KEY (newer) then OLD_V1_KEY
-  const oldV2 = localStorage.getItem(OLD_V2_KEY);
-  if(oldV2){
-    localStorage.setItem(STORAGE_KEY, oldV2);
-    // optional: keep old key (so other users won't lose it)
-    return;
+  function toast(msg){
+    ui.toast.textContent = msg;
+    ui.toast.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(()=>ui.toast.classList.remove("show"), 1400);
   }
 
-  const oldV1 = localStorage.getItem(OLD_V1_KEY);
-  if(oldV1){
-    // convert v1 -> v2 format
+  function genFarmId(){
+    const base = Math.floor(Math.random() * 900000) + 100000;
+    return "farm#" + base;
+  }
+
+  function defaultSave(){
+    return {
+      v: 2,
+      farmId: genFarmId(),
+      coins: 120,
+      level: 1,
+      xp: 0,
+      xpNeed: 100,
+      harvests: 0,
+
+      upgrades: { speed: 0, yield: 0 },
+      maxPlots: BASE_PLOTS,
+      plots: Array.from({length: BASE_PLOTS}, ()=>({ crop:null, plantedAt:0, readyAt:0 })),
+
+      boostUntil: 0,
+
+      // prestige
+      prestige: 0,
+      pp: 0, // prestige points
+      autoFarmer: false,
+
+      // meta
+      selectedCrop: "wheat",
+      lastTick: now(),
+
+      // daily + streak
+      daily: { lastDayKey: "", streak: 0 },
+
+      // quests & achievements
+      quests: makeQuests(1),
+      achievements: {
+        h10:false, h100:false, h1000:false,
+        c1k:false, c10k:false, c100k:false,
+        p1:false
+      }
+    };
+  }
+
+  function load(){
     try{
-      const s1 = JSON.parse(oldV1);
-      const s = defaultSave();
-      s.coins = s1.coins ?? s.coins;
-      s.level = s1.level ?? s.level;
-      s.xp = s1.xp ?? s.xp;
-      s.totalHarvests = s1.totalHarvests ?? 0;
-      s.totalEarned = s1.totalEarned ?? 0;
-      s.plotCount = s1.plotCount ?? s.plotCount;
-      s.plots = s1.plots ?? s.plots;
-      // inv stays 0
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-      return;
-    }catch(e){}
-  }
-}
+      const raw = store.getItem(STORAGE_KEY);
+      if(!raw) return defaultSave();
+      const s = JSON.parse(raw);
+      if(!s || !Array.isArray(s.plots)) return defaultSave();
+      // migrations
+      if(!s.v) s.v = 2;
+      if(!s.farmId) s.farmId = genFarmId();
+      if(!s.daily) s.daily = { lastDayKey:"", streak:0 };
+      if(!s.quests) s.quests = makeQuests(s.level||1);
+      if(!s.achievements) s.achievements = defaultSave().achievements;
+      if(typeof s.pp !== "number") s.pp = 0;
+      if(typeof s.prestige !== "number") s.prestige = 0;
+      if(typeof s.autoFarmer !== "boolean") s.autoFarmer = false;
+      if(!s.selectedCrop) s.selectedCrop = "wheat";
+      if(!s.upgrades) s.upgrades = { speed:0, yield:0 };
+      if(!s.maxPlots) s.maxPlots = s.plots.length || BASE_PLOTS;
 
-function load(){
-  try{
-    migrateIfNeeded();
-
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw){
+      normalizePlots(s);
+      return s;
+    }catch(e){
       return defaultSave();
     }
+  }
 
-    const s = JSON.parse(raw);
+  function save(){
+    state.lastTick = now();
+    store.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
 
-    // repair + ensure inv
-    if(!s.inv) s.inv = { lettuce:0, corn:0, tomato:0 };
-    CROPS.forEach(c=>{ if(typeof s.inv[c.id] !== "number") s.inv[c.id]=0; });
+  function normalizePlots(s){
+    const want = clamp(s.maxPlots || BASE_PLOTS, BASE_PLOTS, MAX_PLOTS);
+    s.maxPlots = want;
 
-    if(!s.plots || !Array.isArray(s.plots)) return defaultSave();
-    if(!s.plotCount) s.plotCount = s.plots.length;
-
-    if(s.plots.length < s.plotCount){
-      for(let i=s.plots.length; i<s.plotCount; i++){
-        s.plots.push({slot:i,status:"empty",cropId:null,plantedAt:null,growSec:null,reward:null,xp:null});
-      }
-    } else if(s.plots.length > s.plotCount){
-      s.plots = s.plots.slice(0, s.plotCount);
+    if(s.plots.length < want){
+      while(s.plots.length < want) s.plots.push({ crop:null, plantedAt:0, readyAt:0 });
+    }else if(s.plots.length > want){
+      s.plots = s.plots.slice(0, want);
     }
-    return s;
-  }catch(e){
-    return defaultSave();
   }
-}
 
-function save(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  renderHeader();
-}
+  function clamp(n,a,b){ return Math.max(a, Math.min(b,n)); }
 
-function addCoins(n){
-  state.coins += n;
-  state.totalEarned += Math.max(0, n);
-  state.xp += Math.floor(Math.max(0, n) / 20);
-  levelUpIfNeeded();
-  save();
-}
+  function cropById(id){ return CROPS.find(c=>c.id===id) || CROPS[0]; }
+  function isUnlockedCrop(c){ return (state.level||1) >= (c.unlockLvl||1); }
 
-function spendCoins(n){
-  if(state.coins < n) return false;
-  state.coins -= n;
-  save();
-  return true;
-}
-
-function levelUpIfNeeded(){
-  while(state.xp >= 20 * state.level){
-    state.xp -= 20 * state.level;
-    state.level += 1;
-    toast(`Level Up! ⭐ ${state.level}`);
+  function speedMultiplier(){
+    const u = state.upgrades.speed || 0;
+    let m = 1 - (u * 0.10);
+    m = clamp(m, 0.40, 1);
+    // prestige permanent
+    const pm = 1 - (state.prestige * 0.02);
+    m = clamp(m * pm, 0.25, 1);
+    if(now() < state.boostUntil) m *= 0.70;
+    return m;
   }
-}
 
-function cropById(id){ return CROPS.find(c=>c.id===id); }
+  function yieldMultiplier(){
+    const u = state.upgrades.yield || 0;
+    let m = 1 + (u * 0.15);
+    // prestige permanent
+    m *= (1 + state.prestige * 0.03);
+    return m;
+  }
 
-function plotStatus(p){
-  if(p.status==="empty") return { label:"Empty", ready:false, remainSec:0 };
-  const end = p.plantedAt + p.growSec*1000;
-  const remain = (end - now())/1000;
-  if(remain <= 0) return { label:"✅ Ready", ready:true, remainSec:0 };
-  return { label:`⏳ Growing (${fmtTime(remain)})`, ready:false, remainSec:remain };
-}
+  function plotUpgradeCost(){
+    const n = state.maxPlots - BASE_PLOTS;
+    return Math.floor(320 * Math.pow(1.55, Math.max(0,n)));
+  }
 
-/* ===== Inventory ops ===== */
-function hasSeed(cropId){ return (state.inv[cropId]||0) > 0; }
-function addSeed(cropId, qty){
-  state.inv[cropId] = (state.inv[cropId]||0) + qty;
-  save();
-}
-function useSeed(cropId){
-  if(!hasSeed(cropId)) return false;
-  state.inv[cropId] -= 1;
-  save();
-  return true;
-}
+  function calcPrices(){
+    const s = state.upgrades.speed || 0;
+    const y = state.upgrades.yield || 0;
 
-function renderHeader(){
-  $("coins").textContent = state.coins;
-  $("level").textContent = state.level;
+    const priceSpeed = Math.floor(200 * Math.pow(1.45, s));
+    const priceYield = Math.floor(260 * Math.pow(1.45, y));
+    const pricePlot  = plotUpgradeCost();
+    const boostPrice = Math.floor(150 * Math.pow(1.25, Math.max(0, state.level-1)));
 
-  const info = $("tgInfo");
-  if(info){
-    if(TG_USER_ID){
-      const name = [tgUser?.first_name, tgUser?.last_name].filter(Boolean).join(" ");
-      const uname = tgUser?.username ? `@${tgUser.username}` : "";
-      info.textContent = `✅ Telegram: ${name} ${uname} (id: ${TG_USER_ID})`;
+    ui.priceSpeed.textContent = format(priceSpeed);
+    ui.priceYield.textContent = format(priceYield);
+    ui.pricePlot.textContent  = format(pricePlot);
+    ui.boostPrice.textContent = format(boostPrice);
+    ui.priceAuto.textContent = state.autoFarmer ? "Owned" : "1 PP";
+
+    return { priceSpeed, priceYield, pricePlot, boostPrice };
+  }
+
+  function isReady(p){ return p.crop && now() >= p.readyAt; }
+
+  function plant(plotIndex, cropId){
+    const p = state.plots[plotIndex];
+    if(!p || p.crop) return false;
+
+    const crop = cropById(cropId);
+    if(!isUnlockedCrop(crop)) return false;
+
+    const sm = speedMultiplier();
+    const growMs = Math.floor(crop.growMs * sm);
+
+    p.crop = crop.id;
+    p.plantedAt = now();
+    p.readyAt = p.plantedAt + growMs;
+    return true;
+  }
+
+  function addXP(xp){
+    state.xp += xp;
+    while(state.xp >= state.xpNeed){
+      state.xp -= state.xpNeed;
+      state.level += 1;
+      state.xpNeed = Math.floor(state.xpNeed * 1.18 + 20);
+      toast(`🎉 Level Up! ⭐ ${state.level}`);
+      // refresh quests tier sometimes
+      if(state.level % 5 === 0) state.quests = makeQuests(state.level);
+    }
+  }
+
+  function harvest(plotIndex){
+    const p = state.plots[plotIndex];
+    if(!p || !isReady(p)) return 0;
+
+    const crop = cropById(p.crop);
+    const coins = Math.floor(crop.base * yieldMultiplier());
+
+    state.coins += coins;
+    state.harvests += 1;
+
+    const xpGain = 10 + Math.floor(crop.base / 6);
+    addXP(xpGain);
+
+    // clear plot
+    p.crop = null; p.plantedAt = 0; p.readyAt = 0;
+    return coins;
+  }
+
+  function estimateProfitPerMinute(){
+    let perMin = 0;
+    const sm = speedMultiplier();
+    for(const p of state.plots){
+      if(!p.crop) continue;
+      const c = cropById(p.crop);
+      const growMs = Math.floor(c.growMs * sm);
+      const value = Math.floor(c.base * yieldMultiplier());
+      perMin += value * (60000 / growMs);
+    }
+    return Math.floor(perMin);
+  }
+
+  // Better Offline Idle: multiple cycles (capped)
+  function applyOfflineIdle(){
+    const last = state.lastTick || now();
+    let dt = Math.max(0, now() - last);
+    dt = Math.min(dt, OFFLINE_CAP_MS);
+
+    if(dt < 4000) return;
+
+    let earned = 0;
+    let cycles = 0;
+
+    const sm = speedMultiplier();
+
+    for(let i=0;i<state.plots.length;i++){
+      const p = state.plots[i];
+      if(!p.crop) continue;
+
+      const c = cropById(p.crop);
+      const growMs = Math.floor(c.growMs * sm);
+
+      // how many harvest cycles completed since last tick?
+      const timeSincePlant = (last <= p.plantedAt) ? dt : (now() - p.plantedAt);
+      const doneCycles = Math.floor(timeSincePlant / growMs);
+
+      if(doneCycles <= 0) continue;
+
+      // Cap per plot to avoid crazy numbers offline
+      const capPerPlot = 50;
+      const n = Math.min(doneCycles, capPerPlot);
+
+      const value = Math.floor(c.base * yieldMultiplier());
+      earned += value * n;
+      cycles += n;
+
+      // keep plot planted, but move timestamps forward
+      // simulate it is still growing with remainder
+      const remainder = timeSincePlant % growMs;
+      p.plantedAt = now() - remainder;
+      p.readyAt = p.plantedAt + growMs;
+    }
+
+    if(earned > 0){
+      state.coins += earned;
+      toast(`🛌 Offline: +${format(earned)} coins (${cycles} cycles)`);
+    }
+  }
+
+  // Daily system
+  function dayKey(t){
+    const d = new Date(t);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  function dailyStatus(){
+    const today = dayKey(now());
+    const last = state.daily.lastDayKey || "";
+    if(last === today) return "CLAIMED";
+    return "READY";
+  }
+
+  function claimDaily(){
+    const st = dailyStatus();
+    if(st !== "READY"){ toast("Daily already claimed ✅"); return; }
+
+    const today = dayKey(now());
+    const last = state.daily.lastDayKey || "";
+    // streak logic: if last day is yesterday -> +1 else reset
+    let streak = state.daily.streak || 0;
+
+    if(last){
+      const lastDate = new Date(last + "T00:00:00");
+      const todayDate = new Date(today + "T00:00:00");
+      const diffDays = Math.round((todayDate - lastDate) / DAY_MS);
+      if(diffDays === 1) streak += 1;
+      else streak = 1;
     }else{
-      info.textContent = "⚠️ Telegram ထဲကနေ မဖွင့်ရသေးပါ (guest mode)";
+      streak = 1;
     }
-  }
-}
 
-function renderFarm(){
-  const root = $("plots");
-  root.innerHTML = "";
-  state.plots.forEach(p=>{
-    const st = plotStatus(p);
-    const crop = p.cropId ? cropById(p.cropId) : null;
+    state.daily.lastDayKey = today;
+    state.daily.streak = streak;
 
-    const div = document.createElement("div");
-    div.className = "plot";
-    div.innerHTML = `
-      <div class="row" style="align-items:center">
-        <h3>Plot #${p.slot+1}</h3>
-        <div class="state">${st.label}</div>
-      </div>
-      <div class="meta">
-        <div>${crop ? `${crop.icon} ${crop.name}` : "—"}</div>
-        <div>${crop ? `+${p.reward}💰` : ""}</div>
-      </div>
-      <div class="btnrow" id="btnrow-${p.slot}"></div>
-    `;
-    root.appendChild(div);
+    const reward = Math.floor(120 + (streak * 35) + (state.level * 8) + (state.prestige*25));
+    state.coins += reward;
 
-    const btnrow = div.querySelector(`#btnrow-${p.slot}`);
-
-    if(p.status === "empty"){
-      const plantBtn = document.createElement("button");
-      plantBtn.className = "primary";
-      plantBtn.textContent = "🌱 Plant";
-      plantBtn.onclick = ()=>openPlantModal(p.slot);
-      btnrow.appendChild(plantBtn);
-
-      const invBtn = document.createElement("button");
-      invBtn.className = "ghost";
-      invBtn.textContent = "🎒 Seeds";
-      invBtn.onclick = ()=>{
-        const lines = CROPS.map(c=>`${c.icon} ${c.name}: ${state.inv[c.id]||0}`).join("\n");
-        alert("Seed Inventory:\n\n" + lines);
-      };
-      btnrow.appendChild(invBtn);
-
-    } else {
-      if(st.ready){
-        const harvestBtn = document.createElement("button");
-        harvestBtn.className = "primary";
-        harvestBtn.textContent = "🧺 Harvest";
-        harvestBtn.onclick = ()=>harvest(p.slot);
-        btnrow.appendChild(harvestBtn);
-      } else {
-        const waitBtn = document.createElement("button");
-        waitBtn.className = "ghost";
-        waitBtn.textContent = "⏳ Waiting";
-        waitBtn.disabled = true;
-        btnrow.appendChild(waitBtn);
-      }
-
-      const cancelBtn = document.createElement("button");
-      cancelBtn.className = "ghost";
-      cancelBtn.textContent = "✖ Clear";
-      cancelBtn.onclick = ()=>clearPlot(p.slot);
-      btnrow.appendChild(cancelBtn);
-    }
-  });
-
-  $("harvests").textContent = state.totalHarvests;
-  $("earned").textContent = state.totalEarned;
-  $("plotCount").textContent = state.plotCount;
-  $("seedTotal").textContent = seedTotal(state.inv);
-
-  $("plotCost").textContent = plotUpgradeCost(state.plotCount);
-  $("buyPlotBtn").disabled = state.plotCount >= MAX_PLOTS;
-  $("buyPlotBtn").textContent = state.plotCount >= MAX_PLOTS ? "Max plots" : "Buy Plot";
-}
-
-function renderShop(){
-  const list = $("shopList");
-  list.innerHTML = "";
-  CROPS.forEach(c=>{
-    const owned = state.inv[c.id] || 0;
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <div class="row">
-        <div>
-          <div class="name">${c.icon} ${c.name}</div>
-          <div class="desc">Grow: ${fmtTime(c.growSec)} • Reward: <b>+${c.reward}</b> coins • XP: +${c.xp}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="price">${c.seedPrice} coins</div>
-          <button class="primary">Buy Seed</button>
-        </div>
-      </div>
-      <div class="row">
-        <div class="small">Owned: <b>${owned}</b></div>
-        <div class="small">Buy adds +1 seed</div>
-      </div>
-    `;
-    card.querySelector("button").onclick = ()=>{
-      if(spendCoins(c.seedPrice)){
-        addSeed(c.id, 1);
-        toast(`Bought ${c.name} seed ✅ (Owned: ${state.inv[c.id]})`);
-        renderShop();
-      } else {
-        toast("Coins မလုံလောက်ပါ ❌");
-      }
-    };
-    list.appendChild(card);
-  });
-}
-
-function openPlantModal(slot){
-  plantSlotPending = slot;
-  $("modalTitle").textContent = `Choose crop for Plot #${slot+1}`;
-  $("modalSub").textContent = `Seeds you own will be shown. Out-of-stock can't be planted.`;
-  renderCropPicker();
-  $("modalBack").style.display = "flex";
-}
-
-function closePlantModal(){
-  $("modalBack").style.display = "none";
-  plantSlotPending = null;
-}
-
-function renderCropPicker(){
-  const grid = $("cropGrid");
-  grid.innerHTML = "";
-  CROPS.forEach(c=>{
-    const owned = state.inv[c.id] || 0;
-    const ok = owned > 0;
-
-    const card = document.createElement("div");
-    card.className = "cropCard";
-    card.innerHTML = `
-      <div class="cropTop">
-        <div class="cropIcon">${c.icon}</div>
-        <div class="badge ${ok ? "ok":"bad"}">${ok ? "In stock":"Out of stock"}</div>
-      </div>
-      <div class="name">${c.name}</div>
-      <div class="cropMeta">
-        <div>⏱ ${fmtTime(c.growSec)}</div>
-        <div>🧺 +${c.reward}</div>
-      </div>
-      <div class="cropMeta">
-        <div>🎒 Owned: <b>${owned}</b></div>
-        <div>⭐ +${c.xp}</div>
-      </div>
-      <div class="cropActions">
-        <button class="${ok ? "primary":"mutedBtn"} fullBtn" ${ok ? "" : "disabled"}>
-          🌱 Plant
-        </button>
-        <button class="ghost">🛒 Shop</button>
-      </div>
-    `;
-
-    const plantBtn = card.querySelectorAll("button")[0];
-    const shopBtn  = card.querySelectorAll("button")[1];
-
-    plantBtn.onclick = ()=>{
-      if(!ok){
-        toast("Seed မရှိပါ ❌ Shop မှာ ဝယ်ပါ");
-        return;
-      }
-      plantFromInventory(plantSlotPending, c.id);
-      closePlantModal();
-    };
-
-    shopBtn.onclick = ()=>{
-      closePlantModal();
-      showView("shop");
-      renderShop();
-      toast("Shop opened 🛒");
-    };
-
-    grid.appendChild(card);
-  });
-}
-
-function plantFromInventory(slot, cropId){
-  const p = state.plots[slot];
-  if(!p) return;
-  if(p.status !== "empty"){ toast("Plot busy"); return; }
-
-  if(!useSeed(cropId)){
-    toast("Seed မရှိပါ ❌");
-    return;
+    toast(`🎁 Daily +${format(reward)} coins (Streak ${streak})`);
+    save(); renderAll();
   }
 
-  const c = cropById(cropId);
-  p.status = "growing";
-  p.cropId = c.id;
-  p.plantedAt = now();
-  p.growSec = c.growSec;
-  p.reward = c.reward;
-  p.xp = c.xp;
+  // Quests & Achievements
+  function makeQuests(level){
+    // 3 quests
+    const tier = Math.max(1, Math.floor(level / 5));
+    const q1 = { id:"harv",  name:"Harvest crops", goal: 20*tier, prog:0, reward: 180*tier };
+    const q2 = { id:"earn",  name:"Earn coins",    goal: 1500*tier, prog:0, reward: 260*tier };
+    const q3 = { id:"plant", name:"Plant crops",   goal: 30*tier, prog:0, reward: 220*tier };
+    return [q1,q2,q3];
+  }
 
-  save();
-  renderFarm();
-  toast(`Planted ${c.name} 🌱 (Remaining: ${state.inv[c.id]})`);
-}
+  function questProgressText(){
+    const done = state.quests.filter(q=>q.prog>=q.goal).length;
+    return `${done}/3`;
+  }
 
-function harvest(slot){
-  const p = state.plots[slot];
-  if(!p || p.status==="empty") return;
-  const st = plotStatus(p);
-  if(!st.ready){ toast("Not ready yet"); return; }
+  function addQuestProgress(type, amount){
+    for(const q of state.quests){
+      if(q.id === type && q.prog < q.goal){
+        q.prog = Math.min(q.goal, q.prog + amount);
+      }
+    }
+  }
 
-  state.totalHarvests += 1;
-  state.xp += (p.xp || 0);
-  addCoins(p.reward || 0);
+  function tryClaimQuests(){
+    let claimed = 0;
+    let coins = 0;
+    for(const q of state.quests){
+      if(q.prog >= q.goal && !q.claimed){
+        q.claimed = true;
+        claimed++;
+        coins += q.reward;
+      }
+    }
+    if(claimed){
+      state.coins += coins;
+      toast(`📜 Claimed ${claimed} quest(s) +${format(coins)} coins`);
+      // refresh quests when all claimed
+      if(state.quests.every(q=>q.claimed)) state.quests = makeQuests(state.level);
+    }else{
+      toast("No quests ready");
+    }
+    save(); renderAll();
+  }
 
-  state.plots[slot] = {slot, status:"empty", cropId:null, plantedAt:null, growSec:null, reward:null, xp:null};
-  save();
-  renderFarm();
-  toast("Harvested ✅");
-}
+  function checkAchievements(){
+    const a = state.achievements;
 
-function clearPlot(slot){
-  const p = state.plots[slot];
-  if(!p) return;
-  state.plots[slot] = {slot, status:"empty", cropId:null, plantedAt:null, growSec:null, reward:null, xp:null};
-  save();
-  renderFarm();
-  toast("Cleared");
-}
+    const h = state.harvests || 0;
+    if(!a.h10 && h >= 10){ a.h10=true; toast("🏅 Achievement: 10 Harvests"); }
+    if(!a.h100 && h >= 100){ a.h100=true; toast("🏅 Achievement: 100 Harvests"); }
+    if(!a.h1000 && h >= 1000){ a.h1000=true; toast("🏅 Achievement: 1000 Harvests"); }
 
-function buyPlot(){
-  if(state.plotCount >= MAX_PLOTS){ toast("Max plots"); return; }
-  const cost = plotUpgradeCost(state.plotCount);
-  if(!spendCoins(cost)){ toast("Coins မလုံလောက်ပါ ❌"); return; }
-  state.plotCount += 1;
-  state.plots.push({slot:state.plotCount-1,status:"empty",cropId:null,plantedAt:null,growSec:null,reward:null,xp:null});
-  save();
-  renderFarm();
-  toast("New plot unlocked ✅");
-}
+    const c = state.coins || 0;
+    if(!a.c1k && c >= 1000){ a.c1k=true; toast("🏅 Achievement: 1k Coins"); }
+    if(!a.c10k && c >= 10000){ a.c10k=true; toast("🏅 Achievement: 10k Coins"); }
+    if(!a.c100k && c >= 100000){ a.c100k=true; toast("🏅 Achievement: 100k Coins"); }
 
-function resetAll(){
-  if(!confirm("Reset game? All progress will be lost.")) return;
+    if(!a.p1 && state.prestige >= 1){ a.p1=true; toast("🏅 Achievement: First Prestige"); }
+  }
 
-  // ✅ remove per-user key only
-  localStorage.removeItem(STORAGE_KEY);
+  function achievementCount(){
+    const a = state.achievements;
+    return Object.values(a).filter(Boolean).length;
+  }
 
-  // optional: keep old keys, or delete them too
-  // localStorage.removeItem(OLD_V2_KEY);
-  // localStorage.removeItem(OLD_V1_KEY);
+  // Prestige
+  function canPrestige(){
+    return (state.level || 1) >= PRESTIGE_UNLOCK_LVL;
+  }
 
-  state = defaultSave();
-  save();
-  renderAll();
-  toast("Reset done");
-}
+  function prestigeGainEstimate(){
+    if(!canPrestige()) return 0;
+    // simple: based on level above unlock + total harvests
+    const lvl = state.level || 1;
+    const extra = Math.max(0, lvl - PRESTIGE_UNLOCK_LVL);
+    const base = 1 + Math.floor(extra / 3);
+    const bonus = Math.floor((state.harvests || 0) / 250);
+    return Math.max(1, base + bonus);
+  }
 
-function exportSave(){
-  const txt = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
-  prompt("Copy this save string:", txt);
-}
+  function doPrestige(){
+    if(!canPrestige()){ toast(`Prestige unlock at lvl ${PRESTIGE_UNLOCK_LVL}`); return; }
 
-function importSave(){
-  const txt = prompt("Paste save string:");
-  if(!txt) return;
-  try{
-    const json = decodeURIComponent(escape(atob(txt)));
-    const s = JSON.parse(json);
-    state = s;
+    const gain = prestigeGainEstimate();
+    const ok = confirm(`Prestige now?\n\nYou gain ${gain} PP.\nYour farm resets but you keep Prestige permanent boosts.\n\nProceed?`);
+    if(!ok) return;
+
+    const keepPrestige = (state.prestige || 0) + 1;
+    const keepPP = (state.pp || 0) + gain;
+
+    // reset
+    const fresh = defaultSave();
+    fresh.farmId = state.farmId; // keep device identity
+    fresh.prestige = keepPrestige;
+    fresh.pp = keepPP;
+    fresh.autoFarmer = state.autoFarmer; // keep if owned
+
+    state = fresh;
+
+    toast(`✨ Prestige +${gain} PP`);
+    save(); renderAll();
+  }
+
+  // Save tools
+  function exportSave(){
+    try{
+      const txt = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      prompt("Copy your save string:", txt);
+    }catch(e){
+      toast("Export failed");
+    }
+  }
+  function importSave(){
+    const txt = prompt("Paste save string:");
+    if(!txt) return;
+    try{
+      const json = decodeURIComponent(escape(atob(txt)));
+      const s = JSON.parse(json);
+      if(!s || !Array.isArray(s.plots)) throw new Error("bad");
+      state = s;
+      normalizePlots(state);
+      toast("Imported ✅");
+      save(); renderAll();
+    }catch(e){
+      toast("Import failed ❌");
+    }
+  }
+
+  // Crop modal
+  let modalMode = "plantAll"; // plantAll | plantSlot
+  let pendingSlot = -1;
+
+  function openCropModal(mode, slot=-1){
+    modalMode = mode;
+    pendingSlot = slot;
+
+    ui.modalTitle.textContent = (mode === "plantSlot")
+      ? `Choose crop for Plot #${slot+1}`
+      : "Choose crop to Plant All";
+
+    ui.modalSub.textContent = "Locked crops unlock with level.";
+    renderCropGrid();
+    ui.modalBack.style.display = "flex";
+  }
+  function closeCropModal(){
+    ui.modalBack.style.display = "none";
+    pendingSlot = -1;
+  }
+
+  function renderCropGrid(){
+    ui.cropGrid.innerHTML = "";
+    for(const c of CROPS){
+      const unlocked = isUnlockedCrop(c);
+      const card = document.createElement("div");
+      card.className = "cropCard";
+      card.innerHTML = `
+        <div class="cropTop">
+          <div class="cropIcon">${c.emoji}</div>
+          <span class="tag ${unlocked ? "good":"bad"}">${unlocked ? "Unlocked":"Locked"}</span>
+        </div>
+        <div class="cropName">${c.name}</div>
+        <div class="cropMeta"><span>Lvl ${c.unlockLvl}+</span><span>⏱ ${(c.growMs/1000).toFixed(0)}s</span></div>
+        <div class="cropMeta"><span>🧺 +${format(Math.floor(c.base * yieldMultiplier()))}</span><span>Speed x${(1/speedMultiplier()).toFixed(2)}</span></div>
+        <div class="cropBtns">
+          <button class="fullBtn primary" ${unlocked ? "" : "disabled"}>Select</button>
+          <button class="fullBtn" data-why="info">Info</button>
+        </div>
+      `;
+      const selectBtn = card.querySelectorAll("button")[0];
+      const infoBtn = card.querySelectorAll("button")[1];
+
+      selectBtn.addEventListener("click", ()=>chooseCrop(c.id));
+      selectBtn.addEventListener("touchstart", (e)=>{ e.preventDefault(); chooseCrop(c.id); }, {passive:false});
+
+      infoBtn.addEventListener("click", ()=>{
+        toast(`${c.emoji} ${c.name}: grow ${(c.growMs/1000).toFixed(0)}s • base ${c.base}`);
+      });
+      infoBtn.addEventListener("touchstart", (e)=>{ e.preventDefault(); toast(`${c.emoji} ${c.name}: grow ${(c.growMs/1000).toFixed(0)}s • base ${c.base}`); }, {passive:false});
+
+      ui.cropGrid.appendChild(card);
+    }
+  }
+
+  function chooseCrop(cropId){
+    state.selectedCrop = cropId;
+    if(modalMode === "plantAll"){
+      plantAll(cropId);
+    }else if(modalMode === "plantSlot" && pendingSlot >= 0){
+      const ok = plant(pendingSlot, cropId);
+      if(ok){
+        addQuestProgress("plant", 1);
+        toast(`🌱 Planted ${cropById(cropId).name}`);
+      }else{
+        toast("Can't plant here");
+      }
+      save(); renderAll();
+    }
+    closeCropModal();
+  }
+
+  // Bulk actions
+  function plantAll(cropId){
+    let planted = 0;
+    for(let i=0;i<state.plots.length;i++){
+      if(!state.plots[i].crop){
+        if(plant(i, cropId)) planted++;
+      }
+    }
+    if(planted){
+      addQuestProgress("plant", planted);
+      toast(`🌱 Planted ${planted} plots`);
+    }else{
+      toast("No empty plots");
+    }
+    save(); renderAll();
+  }
+
+  function harvestAll(){
+    let earned = 0, c = 0;
+    for(let i=0;i<state.plots.length;i++){
+      if(isReady(state.plots[i])){
+        const got = harvest(i);
+        if(got>0){ earned += got; c++; }
+      }
+    }
+    if(c){
+      addQuestProgress("harv", c);
+      addQuestProgress("earn", earned);
+      toast(`🧺 +${format(earned)} coins (${c})`);
+    }else{
+      toast("Nothing ready");
+    }
+    checkAchievements();
+    save(); renderAll();
+  }
+
+  // Auto farmer
+  function autoTick(){
+    if(!state.autoFarmer) return;
+    // harvest ready
+    let earned = 0, h = 0;
+    for(let i=0;i<state.plots.length;i++){
+      if(isReady(state.plots[i])){
+        const got = harvest(i);
+        if(got>0){ earned += got; h++; }
+      }
+    }
+    if(h){
+      addQuestProgress("harv", h);
+      addQuestProgress("earn", earned);
+    }
+    // plant empty using selected crop
+    const cropId = state.selectedCrop || "wheat";
+    for(let i=0;i<state.plots.length;i++){
+      if(!state.plots[i].crop){
+        if(plant(i, cropId)){
+          addQuestProgress("plant", 1);
+        }
+      }
+    }
+    checkAchievements();
     save();
-    renderAll();
-    toast("Imported ✅");
-  }catch(e){
-    toast("Import failed ❌");
   }
-}
 
-function showView(which){
-  const views = { farm:$("viewFarm"), shop:$("viewShop"), profile:$("viewProfile") };
-  Object.values(views).forEach(v=>v.style.display="none");
-  views[which].style.display="block";
+  // Shop buy
+  function buy(type){
+    const prices = calcPrices();
+    if(type === "speed"){
+      if(state.coins < prices.priceSpeed) return toast("Coins not enough ❌");
+      state.coins -= prices.priceSpeed;
+      state.upgrades.speed = (state.upgrades.speed||0) + 1;
+      toast("🧑‍🌾 Speed upgraded!");
+    }
+    if(type === "yield"){
+      if(state.coins < prices.priceYield) return toast("Coins not enough ❌");
+      state.coins -= prices.priceYield;
+      state.upgrades.yield = (state.upgrades.yield||0) + 1;
+      toast("💰 Yield upgraded!");
+    }
+    if(type === "plot"){
+      if(state.maxPlots >= MAX_PLOTS) return toast("Max plots ✅");
+      if(state.coins < prices.pricePlot) return toast("Coins not enough ❌");
+      state.coins -= prices.pricePlot;
+      state.maxPlots += 1;
+      normalizePlots(state);
+      toast("🧺 New plot unlocked!");
+    }
+    if(type === "auto"){
+      if(state.autoFarmer) return toast("Already owned ✅");
+      if(state.pp < 1) return toast("Need 1 PP (Prestige) ❌");
+      state.pp -= 1;
+      state.autoFarmer = true;
+      toast("🤖 Auto Farmer unlocked!");
+    }
+    save(); renderAll();
+  }
 
-  $("tabFarm").classList.toggle("active", which==="farm");
-  $("tabShop").classList.toggle("active", which==="shop");
-  $("tabProfile").classList.toggle("active", which==="profile");
-}
+  // Boost, reset
+  function boost(){
+    const { boostPrice } = calcPrices();
+    if(now() < state.boostUntil) return toast("Boost already active ⚡");
+    if(state.coins < boostPrice) return toast("Coins not enough ❌");
+    state.coins -= boostPrice;
+    state.boostUntil = now() + 30000;
+    toast("⚡ Boost 30s!");
+    save(); renderAll();
+  }
 
-function wire(){
-  $("tabFarm").onclick = ()=>{ showView("farm"); renderFarm(); };
-  $("tabShop").onclick = ()=>{ showView("shop"); renderShop(); };
-  $("tabProfile").onclick = ()=>{ showView("profile"); renderFarm(); };
+  function resetAll(){
+    const ok = confirm("Reset game? All progress will be lost.");
+    if(!ok) return;
+    store.removeItem(STORAGE_KEY);
+    state = defaultSave();
+    toast("Reset done");
+    save(); renderAll();
+  }
 
-  $("buyPlotBtn").onclick = buyPlot;
-  $("resetBtn").onclick = resetAll;
-  $("exportBtn").onclick = exportSave;
-  $("importBtn").onclick = importSave;
+  // Render
+  function renderHeader(){
+    ui.farmIdChip.textContent = state.farmId || "farm#??????";
+    ui.coins.textContent = format(state.coins);
+    ui.level.textContent = format(state.level);
+    ui.xpLine.textContent = `XP ${format(state.xp)} / ${format(state.xpNeed)}`;
+    ui.harvests.textContent = format(state.harvests);
 
-  $("modalClose").onclick = closePlantModal;
-  $("modalBack").addEventListener("click", (e)=>{
-    if(e.target === $("modalBack")) closePlantModal();
-  });
-}
+    ui.prestige.textContent = format(state.prestige);
+    ui.pp.textContent = format(state.pp);
+    ui.autoTag.textContent = state.autoFarmer ? "ON" : "OFF";
+    ui.plotLabel.textContent = state.maxPlots;
 
-function renderAll(){
-  renderHeader();
-  renderFarm();
-  renderShop();
-}
+    ui.selCrop.textContent = `${cropById(state.selectedCrop).emoji} ${cropById(state.selectedCrop).name}`;
+    ui.streak.textContent = format(state.daily.streak || 0);
+    ui.achCount.textContent = format(achievementCount());
 
-wire();
-renderAll();
+    ui.dailyTag.textContent = (dailyStatus()==="READY") ? "READY" : "CLAIMED";
+    ui.questTag.textContent = questProgressText();
 
-// update timers on farm
-setInterval(()=>{
-  if($("viewFarm").style.display !== "none") renderFarm();
-}, 1000);
-</script>
+    if(canPrestige()){
+      ui.prestigeTag.textContent = `Gain ~${prestigeGainEstimate()} PP`;
+    }else{
+      ui.prestigeTag.textContent = `Locked (lvl ${PRESTIGE_UNLOCK_LVL})`;
+    }
+  }
+
+  function renderFarm(){
+    normalizePlots(state);
+    ui.field.innerHTML = "";
+
+    const sm = speedMultiplier();
+
+    state.plots.forEach((p, idx) => {
+      const el = document.createElement("div");
+      el.className = "plot";
+
+      let badge = "#" + (idx+1);
+      let emoji = "🟫";
+      let name = "Empty";
+      let bar = 0;
+      let footL = "tap: plant";
+      let footR = "";
+
+      if(p.crop){
+        const c = cropById(p.crop);
+        emoji = c.emoji;
+        name = c.name;
+
+        const total = Math.max(1, p.readyAt - p.plantedAt);
+        const done = clamp(now() - p.plantedAt, 0, total);
+        bar = (done / total) * 100;
+
+        if(isReady(p)){
+          badge = "READY";
+          footL = "tap: harvest";
+          footR = "+" + format(Math.floor(c.base * yieldMultiplier()));
+          bar = 100;
+        }else{
+          const left = Math.max(0, p.readyAt - now());
+          footL = "growing";
+          footR = (left/1000).toFixed(0) + "s";
+        }
+      }else{
+        const sc = cropById(state.selectedCrop);
+        emoji = sc.emoji;
+        name = `Tap to plant ${sc.name}`;
+      }
+
+      el.innerHTML = `
+        <div class="badge">${badge}</div>
+        <div class="emoji">${emoji}</div>
+        <div class="name">${name}</div>
+        <div class="bar"><i style="width:${bar.toFixed(1)}%"></i></div>
+        <div class="foot"><span>${footL}</span><span>${footR}</span></div>
+      `;
+
+      const tap = ()=>{
+        if(p.crop){
+          if(isReady(p)){
+            const earned = harvest(idx);
+            addQuestProgress("harv", 1);
+            addQuestProgress("earn", earned);
+            toast("🧺 +" + format(earned) + " coins");
+          }else{
+            toast("⏳ Not ready yet");
+          }
+        }else{
+          openCropModal("plantSlot", idx);
+        }
+        checkAchievements();
+        save(); renderAll();
+      };
+
+      // Improve WebView tap reliability
+      el.addEventListener("click", tap);
+      el.addEventListener("touchstart", (e)=>{ e.preventDefault(); tap(); }, {passive:false});
+
+      ui.field.appendChild(el);
+    });
+
+    // Boost label
+    const { boostPrice } = calcPrices();
+    if(now() < state.boostUntil){
+      const left = Math.max(0, state.boostUntil - now());
+      ui.btnBoost.querySelector(".r").innerHTML = `<b>${(left/1000).toFixed(0)}s</b> left`;
+    }else{
+      ui.btnBoost.querySelector(".r").innerHTML = `<b>${format(boostPrice)}</b> coins`;
+    }
+  }
+
+  function renderAll(){
+    renderHeader();
+    renderFarm();
+    calcPrices();
+  }
+
+  // Wire buttons with touch + click
+  function onTap(el, fn){
+    el.addEventListener("click", fn);
+    el.addEventListener("touchstart", (e)=>{ e.preventDefault(); fn(); }, {passive:false});
+  }
+
+  let state = load();
+
+  function init(){
+    applyOfflineIdle();
+    checkAchievements();
+    save();
+
+    onTap(ui.btnPlantAll, ()=>openCropModal("plantAll"));
+    onTap(ui.btnHarvestAll, harvestAll);
+    onTap(ui.btnBoost, boost);
+    onTap(ui.btnReset, resetAll);
+
+    onTap(ui.btnDaily, claimDaily);
+    onTap(ui.btnQuests, tryClaimQuests);
+    onTap(ui.btnPrestige, doPrestige);
+
+    onTap(ui.btnSaveTools, ()=>{
+      const choice = prompt("Type:\n1 = Export\n2 = Import\n\nEnter 1 or 2:");
+      if(choice === "1") exportSave();
+      else if(choice === "2") importSave();
+    });
+
+    document.querySelectorAll(".buy").forEach(btn=>{
+      const type = btn.getAttribute("data-buy");
+      onTap(btn, ()=>buy(type));
+    });
+
+    onTap(ui.modalClose, closeCropModal);
+    ui.modalBack.addEventListener("click", (e)=>{ if(e.target === ui.modalBack) closeCropModal(); });
+
+    renderAll();
+
+    // Auto farmer loop
+    setInterval(autoTick, 1400);
+
+    // Lightweight UI refresh (progress bars)
+    setInterval(()=>{ renderFarm(); }, 350);
+  }
+
+  init();
+  </script>
 </body>
 </html>
